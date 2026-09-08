@@ -1,0 +1,10 @@
+DEFAULT armbian-h728
+TIMEOUT 30
+MENU TITLE X96Q Pro+ H728 Armbian v2
+
+LABEL armbian-h728
+    MENU LABEL Armbian H728 - matched Manjaro 6.17-2 hardware kernel
+    LINUX /Image
+    INITRD /initrd.img-@KERNEL_VERSION@
+    FDT /dtb/allwinner/sun55i-h728-x96qpro+.dtb
+    APPEND root=UUID=@ROOT_UUID@ rootwait rw rootfstype=ext4 console=ttyS0,115200 earlycon=uart8250,mmio32,0x02500000 loglevel=7 panic=10

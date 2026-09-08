@@ -1,0 +1,12 @@
+# macOS metadata
+.DS_Store
+
+# Downloaded source/reference packages and locally produced binary artifacts.
+# Their exact versions and checksums are documented in MATERIALS.md/SHA256SUMS.
+source-archives/
+reference-packages/
+build-artifacts/
+manjaro-linux-a523.tar.gz
+
+# The Armbian framework is a separate Git checkout with its own history.
+armbian-build/

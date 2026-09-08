@@ -1,0 +1,12 @@
+Package: linux-image-h728-manjaro
+Version: 6.17.0~rc1-2+h728.2
+Architecture: arm64
+Maintainer: Local X96Q Pro+ build <root@localhost>
+Depends: initramfs-tools, kmod
+Provides: linux-image
+Conflicts: linux-image-current-sunxi64, linux-dtb-current-sunxi64
+Section: kernel
+Priority: optional
+Description: Matched H728 kernel, modules and DTB from junari linux-sunxi 6.17-2
+ Repackaged unchanged from the reference Manjaro package for this local
+ Armbian SD image. Actual upstream kernel release is 6.17.0-rc1-2-MANJARO-ARM+.

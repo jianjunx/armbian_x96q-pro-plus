@@ -1,0 +1,8 @@
+[Unit]
+Description=Save H728 CPU, Ethernet, USB and boot diagnostics to SD boot partition
+After=local-fs.target systemd-udev-trigger.service
+ConditionPathIsMountPoint=/boot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/h728-diagnostics

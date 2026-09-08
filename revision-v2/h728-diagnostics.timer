@@ -1,0 +1,10 @@
+[Unit]
+Description=Collect H728 hardware status after boot
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=3min
+Unit=h728-diagnostics.service
+
+[Install]
+WantedBy=timers.target

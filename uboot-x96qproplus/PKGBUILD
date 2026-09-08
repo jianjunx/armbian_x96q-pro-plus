@@ -1,0 +1,83 @@
+pkgname=uboot-x96qproplus
+pkgver=v2025.01
+_pkgver=b99f4a9e0778f4f402619d70976537d4833d7eab
+pkgrel=1
+_tfaver=b5de74a685fb73b784e45bbbd18dd9a0c528d8b2
+pkgdesc="U-Boot for x96qproplus"
+arch=('aarch64')
+url='http://www.denx.de/wiki/U-Boot/WebHome'
+license=('GPL')
+makedepends=('bc' 'python' 'python-setuptools' 'swig' 'dtc' 'arm-none-eabi-gcc' 'bison' 'flex')
+provides=('uboot')
+conflicts=('uboot')
+replaces=('uboot-x96qproplus')
+install=${pkgname}.install
+source=("https://github.com/apritzel/u-boot/archive/${_pkgver}.zip"
+        "https://github.com/jernejsk/arm-trusted-firmware/archive/${_tfaver}.zip"
+        "0001.patch"
+        )
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            )
+
+prepare() {
+  apply_patches() {
+      local PATCH
+      for PATCH in "${source[@]}"; do
+          PATCH="${PATCH%%::*}"
+          PATCH="${PATCH##*/}"
+          [[ ${PATCH} = *.patch ]] || continue
+          msg2 "Applying patch: ${PATCH}..."
+          patch -N -p1 < "../${PATCH}"
+      done
+  }
+
+  cd u-boot-${_pkgver}
+  apply_patches
+}
+
+build() {
+  # Avoid build warnings by editing a .config option in place instead of
+  # appending an option to .config, if an option is already present
+  update_config() {
+    if ! grep -q "^$1=$2$" .config; then
+      if grep -q "^# $1 is not set$" .config; then
+        sed -i -e "s/^# $1 is not set$/$1=$2/g" .config
+      elif grep -q "^$1=" .config; then
+        sed -i -e "s/^$1=.*/$1=$2/g" .config
+      else
+        echo "$1=$2" >> .config
+      fi
+    fi
+  }
+
+  unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
+
+  cd arm-trusted-firmware-${_tfaver}
+
+  echo -e "\nBuilding TF-A for A523 devices...\n"
+  # Not performing regulator setup in TF-A allows Linux to boot on
+  # this board correctly, which otherwise fails because the Ethernet
+  # PHY requires a coordinated bringup of two regulators
+  make PLAT=sun55i_a523 bl31
+  cp build/sun55i_a523/release/bl31.bin ../u-boot-${_pkgver}
+
+  cd ../u-boot-${_pkgver}
+
+  echo -e "\nBuilding U-Boot for x96qproplus...\n"
+  make x96q_pro_plus_defconfig
+
+  update_config 'CONFIG_IDENT_STRING' '" Manjaro Linux ARM"'
+  update_config 'CONFIG_OF_LIBFDT_OVERLAY' 'y'
+
+  make EXTRAVERSION=-${pkgrel}
+  cp u-boot-sunxi-with-spl.bin u-boot-sunxi-with-spl-x96qproplus.bin
+}
+
+package() {
+  cd u-boot-${_pkgver}
+
+  mkdir -p "${pkgdir}/boot/extlinux"
+  install -D -m 0644 u-boot-sunxi-with-spl-x96qproplus.bin -t "${pkgdir}/boot"
+}

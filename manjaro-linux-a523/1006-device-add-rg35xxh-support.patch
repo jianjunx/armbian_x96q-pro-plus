@@ -1,0 +1,319 @@
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi b/arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi
+index a1f0350a3..d98c731b1 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi
+@@ -187,6 +187,7 @@ mixer0: mixer@100000 {
+ 					 <&display_clocks CLK_MIXER0>;
+ 				clock-names = "bus", "mod";
+ 				resets = <&display_clocks RST_MIXER0>;
++				iommus = <&iommu 0>;
+ 
+ 				ports {
+ 					#address-cells = <1>;
+@@ -350,6 +351,18 @@ ir_rx_pin: ir-rx-pin {
+ 				function = "ir_rx";
+ 			};
+ 
++			/omit-if-no-ref/
++			lcd0_rgb888_pins: lcd0-rgb888-pins {
++				pins = "PD0", "PD1", "PD2", "PD3",
++				       "PD4", "PD5", "PD6", "PD7",
++				       "PD8", "PD9", "PD10", "PD11",
++				       "PD12", "PD13", "PD14", "PD15",
++				       "PD16", "PD17", "PD18", "PD19",
++				       "PD20", "PD21", "PD22", "PD23",
++				       "PD24", "PD25", "PD26", "PD27";
++				function = "lcd0";
++			};
++
+ 			/omit-if-no-ref/
+ 			lvds0_pins: lvds0-pins {
+ 				pins = "PD0", "PD1", "PD2", "PD3", "PD4",
+@@ -357,6 +370,13 @@ lvds0_pins: lvds0-pins {
+ 				function = "lvds0";
+ 			};
+ 
++			/omit-if-no-ref/
++			lvds1_pins: lvds1-pins {
++				pins = "PD10", "PD11", "PD12", "PD13", "PD14",
++				       "PD15", "PD16", "PD17", "PD18", "PD19";
++				function = "lvds1";
++			};
++
+ 			mmc0_pins: mmc0-pins {
+ 				pins = "PF0", "PF1", "PF2", "PF3",
+ 				       "PF4", "PF5";
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h700-anbernic-rg35xx-2024.dts b/arch/arm64/boot/dts/allwinner/sun50i-h700-anbernic-rg35xx-2024.dts
+index b6159e2fc..a8d784060 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h700-anbernic-rg35xx-2024.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h700-anbernic-rg35xx-2024.dts
+@@ -31,7 +31,20 @@ chosen {
+ 		stdout-path = "serial0:115200n8";
+ 	};
+ 
+- 	connector {
++	backlight: backlight {
++		compatible = "pwm-backlight";
++		pwms = <&pwm 0 50000 0>;
++		pinctrl-0 = <&lcd_backlight_pin>;
++		pinctrl-names = "default";
++	};
++
++	battery: battery {
++		compatible = "simple-battery";
++		constant-charge-current-max-microamp = <1024000>;
++		voltage-max-design-microvolt = <4200000>;
++	};
++
++	connector {
+ 		compatible = "hdmi-connector";
+ 		type = "c";
+ 
+@@ -176,16 +189,67 @@ led-0 {
+ 			function = LED_FUNCTION_POWER;
+ 			color = <LED_COLOR_ID_GREEN>;
+ 			gpios = <&pio 8 12 GPIO_ACTIVE_HIGH>; /* PI12 */
+-			default-state = "on";
++			default-state = "off";
+ 		};
+ 	};
+ 
++	reg_lcd: regulator-gpio-lcd-vdd {
++		compatible = "regulator-fixed";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-name = "vdd-lcd";
++		gpio = <&pio 8 15 GPIO_ACTIVE_HIGH>; // PI15
++		enable-active-high;
++	};
++
++	reg_mmc2: regulator-mmc2 {
++		compatible = "regulator-fixed";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		regulator-name = "vdd-mmc2";
++		gpio = <&pio 4 4 GPIO_ACTIVE_HIGH>; // PE4
++		enable-active-high;
++	};
++
+ 	reg_vcc5v: regulator-vcc5v { /* USB-C power input */
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "vcc-5v";
+ 		regulator-min-microvolt = <5000000>;
+ 		regulator-max-microvolt = <5000000>;
+ 	};
++
++	spi_lcd: spi {
++		compatible = "spi-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		sck-gpios = <&pio 8 9 GPIO_ACTIVE_HIGH>; // PI9
++		mosi-gpios = <&pio 8 10 GPIO_ACTIVE_HIGH>; // PI10
++		cs-gpios = <&pio 8 8 GPIO_ACTIVE_HIGH>; // PI8
++		num-chipselects = <1>;
++
++		panel: panel@0 {
++			compatible = "anbernic,rg35xx-plus-panel";
++
++			reg = <0>;
++
++			spi-max-frequency = <3125000>;
++			spi-3wire;
++
++			reset-gpios = <&pio 8 14 GPIO_ACTIVE_LOW>; // PI14
++
++			backlight = <&backlight>;
++			power-supply = <&reg_lcd>;
++			pinctrl-0 = <&lcd0_rgb888_pins>;
++			pinctrl-names = "default";
++
++			port {
++				panel_in_rgb: endpoint {
++					remote-endpoint = <&tcon_lcd0_out_lcd>;
++				};
++			};
++		};
++	};
+ };
+ 
+ &codec {
+@@ -230,18 +294,38 @@ &mmc0 {
+ 	status = "okay";
+ };
+ 
++&mmc2 {
++	vmmc-supply = <&reg_mmc2>;
++	disable-wp;
++	cd-gpios = <&pio 4 22 GPIO_ACTIVE_LOW>;  /* PE22 */
++	bus-width = <4>;
++	status = "okay";
++};
++
+ &ohci0 {
+ 	status = "okay";
+ };
+ 
+ &pio {
+ 	vcc-pa-supply = <&reg_cldo3>;
+-	vcc-pc-supply = <&reg_cldo3>;
++	vcc-pc-supply = <&reg_aldo1>;
++	vcc-pd-supply = <&reg_cldo3>;
+ 	vcc-pe-supply = <&reg_cldo3>;
+ 	vcc-pf-supply = <&reg_cldo3>;
+ 	vcc-pg-supply = <&reg_aldo4>;
+ 	vcc-ph-supply = <&reg_cldo3>;
+ 	vcc-pi-supply = <&reg_cldo3>;
++
++	lcd_backlight_pin: pwm0-pin {
++		pins = "PD28";
++		function = "pwm0";
++	};
++};
++
++&pwm {
++	allwinner,pwm-paired-channel-clock-sources = "hosc", "hosc", "hosc";
++	allwinner,pwm-paired-channel-clock-prescales = <0>, <0>, <0>;
++	status = "okay";
+ };
+ 
+ &r_i2c {
+@@ -293,7 +377,10 @@ reg_dcdc3: dcdc3 {
+ 			};
+ 
+ 			reg_aldo1: aldo1 {
+-				/* 1.8v - unused */
++				regulator-always-on;
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
++				regulator-name = "vcc-mmc2";
+ 			};
+ 
+ 			reg_aldo2: aldo2 {
+@@ -363,7 +450,10 @@ reg_boost: boost {
+ 			};
+ 
+ 			reg_cpusldo: cpusldo {
+-				/* unused */
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-min-microvolt = <900000>;
++				regulator-max-microvolt = <900000>;
+ 			};
+ 		};
+ 
+@@ -374,6 +464,16 @@ usb_power: usb-power {
+ 	};
+ };
+ 
++&tcon_lcd0 {
++	status = "okay";
++};
++
++&tcon_lcd0_out {
++	tcon_lcd0_out_lcd: endpoint@1 {
++		remote-endpoint = <&panel_in_rgb>;
++	};
++};
++
+ &uart0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&uart0_ph_pins>;
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h700-anbernic-rg35xx-h.dts b/arch/arm64/boot/dts/allwinner/sun50i-h700-anbernic-rg35xx-h.dts
+index ff453336e..237de1abb 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h700-anbernic-rg35xx-h.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h700-anbernic-rg35xx-h.dts
+@@ -71,6 +71,25 @@ gpio_mux: mux-controller {
+ 			    <&pio 8 2 GPIO_ACTIVE_LOW>;
+ 		#mux-control-cells = <0>;
+ 	};
++
++	vcc_3v3_usb: regulator-vcc-3v3-usb {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpio = <&pio 4 5 GPIO_ACTIVE_HIGH>; /* PE5 */
++		regulator-name = "vcc_3v3_usb";
++		regulator-max-microvolt = <3300000>;
++		regulator-min-microvolt = <3300000>;
++	};
++
++	vcc_5v0_usb: regulator-vcc-5v0-usb {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpio = <&pio 8 7 GPIO_ACTIVE_HIGH>; /* PI7 */
++		regulator-name = "vcc_5v0_usb";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc_3v3_usb>;
++	};
+ };
+ 
+ &gpadc {
+@@ -113,3 +132,7 @@ joy_mux_pin: joy-mux-pin {
+ 		function = "gpio_out";
+ 	};
+ };
++
++&usbphy {
++	usb1_vbus-supply = <&vcc_5v0_usb>;
++};
+diff --git a/drivers/clk/sunxi-ng/ccu-sun8i-de2.c b/drivers/clk/sunxi-ng/ccu-sun8i-de2.c
+index 7683ea08d..83eab6f13 100644
+--- a/drivers/clk/sunxi-ng/ccu-sun8i-de2.c
++++ b/drivers/clk/sunxi-ng/ccu-sun8i-de2.c
+@@ -5,6 +5,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/io.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+@@ -239,6 +240,16 @@ static const struct sunxi_ccu_desc sun50i_h5_de2_clk_desc = {
+ 	.num_resets	= ARRAY_SIZE(sun50i_h5_de2_resets),
+ };
+ 
++static const struct sunxi_ccu_desc sun50i_h616_de33_clk_desc = {
++	.ccu_clks	= sun8i_de2_ccu_clks,
++	.num_ccu_clks	= ARRAY_SIZE(sun8i_de2_ccu_clks),
++
++	.hw_clks	= &sun8i_h3_de2_hw_clks,
++
++	.resets		= sun50i_h5_de2_resets,
++	.num_resets	= ARRAY_SIZE(sun50i_h5_de2_resets),
++};
++
+ static int sunxi_de2_clk_probe(struct platform_device *pdev)
+ {
+ 	struct clk *bus_clk, *mod_clk;
+@@ -291,6 +302,16 @@ static int sunxi_de2_clk_probe(struct platform_device *pdev)
+ 		goto err_disable_mod_clk;
+ 	}
+ 
++	/*
++	 * The DE33 requires these additional (unknown) registers set
++	 * during initialisation.
++	 */
++	if (of_device_is_compatible(pdev->dev.of_node,
++				    "allwinner,sun50i-h616-de33-clk")) {
++		//writel(0, reg + 0x24);
++		writel(0x0000a980, reg + 0x28);
++	}
++
+ 	ret = devm_sunxi_ccu_probe(&pdev->dev, reg, ccu_desc);
+ 	if (ret)
+ 		goto err_assert_reset;
+@@ -335,6 +356,10 @@ static const struct of_device_id sunxi_de2_clk_ids[] = {
+ 		.compatible = "allwinner,sun50i-h6-de3-clk",
+ 		.data = &sun50i_h5_de2_clk_desc,
+ 	},
++	{
++		.compatible = "allwinner,sun50i-h616-de33-clk",
++		.data = &sun50i_h616_de33_clk_desc,
++	},
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, sunxi_de2_clk_ids);
+-- 
+2.46.1
+

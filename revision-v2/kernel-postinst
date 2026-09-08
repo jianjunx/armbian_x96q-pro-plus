@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+if [ "$1" = configure ]; then
+    version=6.17.0-rc1-2-MANJARO-ARM+
+    depmod "$version"
+    payload="/usr/lib/linux-image-h728-manjaro"
+    mkdir -p /boot/dtb/allwinner
+    cp "$payload/Image" "/boot/vmlinuz-$version"
+    cp "$payload/Image" /boot/Image
+    cp "$payload/config" "/boot/config-$version"
+    cp "$payload/sun55i-h728-x96qpro+.dtb" /boot/dtb/allwinner/
+    if [ -f "/boot/initrd.img-$version" ]; then
+        update-initramfs -u -k "$version"
+    else
+        update-initramfs -c -k "$version"
+    fi
+fi

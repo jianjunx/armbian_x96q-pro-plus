@@ -1,0 +1,43 @@
+#!/bin/bash
+# Read-only hardware checks; only the report is written, to the SD boot partition.
+set -u
+report=$(mktemp /boot/.h728-diagnostics.XXXXXX) || exit 1
+{
+    echo "X96Q Pro+ H728 / Armbian v2 hardware report"
+    date -Is
+    uname -a
+    printf 'Model: '; tr '\0' '\n' </proc/device-tree/model
+    printf 'CPU online: '; cat /sys/devices/system/cpu/online
+    printf 'CPU possible: '; cat /sys/devices/system/cpu/possible
+    lscpu
+    for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+        [ -d "$policy" ] || continue
+        echo "$policy"
+        for name in affected_cpus scaling_driver scaling_governor cpuinfo_min_freq cpuinfo_max_freq scaling_cur_freq; do
+            printf '%s: ' "$name"; cat "$policy/$name" 2>/dev/null || true
+        done
+    done
+    ip -br link
+    ip -br address
+    ip route
+    networkctl --no-pager list
+    for iface in /sys/class/net/*; do
+        echo "$iface"
+        readlink -f "$iface/device/driver" || true
+        for name in carrier operstate speed duplex; do
+            printf '%s: ' "$name"; cat "$iface/$name" 2>/dev/null || true
+        done
+    done
+    lsusb
+    lsusb -t
+    lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
+    for zone in /sys/class/thermal/thermal_zone*; do
+        [ -d "$zone" ] || continue
+        printf '%s: ' "$zone"; cat "$zone/type" "$zone/temp"
+    done
+    systemctl --no-pager --failed
+    dmesg
+    journalctl -b -u systemd-networkd -u ssh --no-pager -n 150
+} >"$report" 2>&1
+mv -f "$report" /boot/h728-diagnostics.txt
+sync -f /boot/h728-diagnostics.txt
