@@ -13,9 +13,25 @@ if [[ "${H728_DTB_ROLLBACK:-0}" == "1" ]]; then
 fi
 
 node=/soc/mmc@4022000
-for pair in 'vmmc-supply reg_cldo3' 'vqmmc-supply reg_cldo1'; do
-    read -r property symbol <<<"$pair"
-    path=$(fdtget "$dtb" /__symbols__ "$symbol")
+# A reference is either an absolute node path or a __symbols__ entry name.
+# vmmc-supply is the board 3V3 rail (/vcc3v3), the same supply already used by
+# the two proven controllers mmc@4020000 (SD) and mmc@4021000 (SDIO Wi-Fi).
+#
+# It must NOT be reg_cldo3 ("vcc-codec-eth-sd", phandle 0x15): that fixed
+# 3.4 V rail also supplies the GMAC1 PHY (ethernet@4510000 phy-supply) and
+# GPIO banks PB/PF/PH. Claiming it for eMMC lets the MMC core gate it while
+# power-sequencing, which browns out the RTL8211F; MDIO then reports
+# "device at address 1 is missing", end0 never comes up, and the box stays
+# invisible on the network. Confirmed by hardware bisection: with
+# /soc/mmc@4022000 disabled the PHY binds at 1 Gbps, with it enabled and
+# vmmc-supply = reg_cldo3 the PHY is lost.
+for pair in 'vmmc-supply /vcc3v3' 'vqmmc-supply reg_cldo1'; do
+    read -r property ref <<<"$pair"
+    if [[ $ref == /* ]]; then
+        path=$ref
+    else
+        path=$(fdtget "$dtb" /__symbols__ "$ref")
+    fi
     phandle=$(fdtget -t x "$dtb" "$path" phandle)
     fdtput -t x "$dtb" "$node" "$property" "$phandle"
 done
