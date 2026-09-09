@@ -32,7 +32,7 @@ v2.1 安装器补齐作者原配套固件、设置 schedutil 和 408 MHz 最低�
 - 默认 governor 仍为 performance；升级内核本身不会自动完成本次节能修正。
 - 模块依旧采用 `.ko.gz`；在 Debian 上重新打包时须继续处理压缩兼容、depmod 和 initramfs。
 
-此包已下载、解包和静态审查，**尚未集成成可烧录新镜像，也未真机启动**。不能直接将 Manjaro 的 pacman 包交给 apt 安装，也不能单独替换 Image。后续应成套打包内核/模块/DTB，在单独测试镜像里验证 SD、网卡、USB、Wi-Fi 与 DVFS，保留 v2 作为回退基线。
+此包已下载、解包和静态审查。本评估之后，它已被成套集成为 `revision-v3/` 的可烧录镜像，且通过离线一致性检查；**v3 尚未真机启动**。不能直接将 Manjaro 的 pacman 包交给 apt 安装，也不能单独替换 Image。后续应在 SD 卡上验证网卡、USB、Wi-Fi 与 DVFS，继续保留 v2 作为回退基线。
 
 ## Debian 13 Trixie
 
@@ -42,4 +42,4 @@ v2.1 安装器补齐作者原配套固件、设置 schedutil 和 408 MHz 最低�
 
 Armbian 官方将 Bookworm → Trixie 这类原地升级列为实验且不支持，建议新镜像；参见[升级说明](https://docs.armbian.com/getting-started/updating/)和[发行版升级功能](https://docs.armbian.com/config/updates/)。国内源偏好继续使用清华或科大，Debian security 仓库也要使用对应的 trixie-security。
 
-当前交付是可在 v2 上安装的 Wi-Fi/调频修复包，以及较新内核物料和此评估；不是已完成的 Trixie/7.2 镜像。
+当前交付已包括可在 v2 上安装的 Wi-Fi/调频修复包，以及后续完成的 Trixie/7.2 v3 镜像。v3 的构建和测试状态以 `revision-v3/README.md` 为准。
