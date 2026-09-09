@@ -11,16 +11,27 @@ blob=/armbian/cache/blobs/u-boot-sunxi-with-spl-x96qproplus-b99f4a9.bin
 cmp -n "$(stat -c%s "$blob")" -i 8192:0 "$image" "$blob"
 cmp "$root/boot/Image" "$ref/boot/Image"
 dtb=$root/boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb
-expected=$root/tmp/expected.dtb
-cp "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb" "$expected"
-bash "$src/patch-emmc-dtb.sh" "$expected"
-cmp "$dtb" "$expected"
-cmp "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+-stock.dtb" "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb"
-for node in /soc/ethernet@4510000 /soc/usb@4d00000 /soc/phy@4f00000 /soc/mmc@4020000 /soc/mmc@4021000 /soc/mmc@4022000; do
-    test "$(fdtget "$dtb" "$node" status)" = okay
-done
-test "$(fdtget "$dtb" /soc/mmc@4022000 max-frequency)" -eq 52000000
-test "$(fdtget "$dtb" /soc/mmc@4022000 bus-width)" -eq 8
+if [[ "${H728_DTB_ROLLBACK:-0}" == "1" ]]; then
+    # Rollback build: the payload DTB was not patched, so it must equal the
+    # reference DTB byte-for-byte, and /soc/mmc@4022000 must remain disabled.
+    cmp "$dtb" "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb"
+    cmp "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+-stock.dtb" "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb"
+    for node in /soc/ethernet@4510000 /soc/usb@4d00000 /soc/phy@4f00000 /soc/mmc@4020000 /soc/mmc@4021000; do
+        test "$(fdtget "$dtb" "$node" status)" = okay
+    done
+    test "$(fdtget "$dtb" /soc/mmc@4022000 status)" = disabled
+else
+    expected=$root/tmp/expected.dtb
+    cp "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb" "$expected"
+    bash "$src/patch-emmc-dtb.sh" "$expected"
+    cmp "$dtb" "$expected"
+    cmp "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+-stock.dtb" "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb"
+    for node in /soc/ethernet@4510000 /soc/usb@4d00000 /soc/phy@4f00000 /soc/mmc@4020000 /soc/mmc@4021000 /soc/mmc@4022000; do
+        test "$(fdtget "$dtb" "$node" status)" = okay
+    done
+    test "$(fdtget "$dtb" /soc/mmc@4022000 max-frequency)" -eq 52000000
+    test "$(fdtget "$dtb" /soc/mmc@4022000 bus-width)" -eq 8
+fi
 test "$(fdtget -l "$dtb" /cpus | grep -c '^cpu@')" -eq 8
 for cpu in 0 100 200 300 400 500 600 700; do
     test "$(fdtget "$dtb" /cpus/cpu@$cpu compatible)" = arm,cortex-a55

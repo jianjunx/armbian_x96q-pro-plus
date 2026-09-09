@@ -25,6 +25,13 @@ sed "s/@ROOT_UUID@/$uuid/g; s/^verbosity=7/verbosity=6/" /armbian/cache/h728-v2-
 # U-Boot expands fdtfile at boot time, not this build shell.
 # shellcheck disable=SC2016
 sed 's/H728 v2/H728 v3/g; s/verbosity 7/verbosity 6/; s|dtb/allwinner/sun55i-h728-x96qpro+.dtb|dtb/${fdtfile}|' /armbian/cache/h728-v2-input/boot.cmd >"$root/boot/boot.cmd"
+# When the eMMC DTB patch was skipped, the payload DTB equals the reference
+# DTB, so /boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb is effectively stock.
+# Reflect that in the extlinux menu label so the default boot entry is not
+# misdescribed as "eMMC enabled". fdtfile already points at this same file.
+if [[ "${H728_DTB_ROLLBACK:-0}" == "1" ]]; then
+    sed -i 's|Armbian Trixie - Linux 7.2 - eMMC enabled (52 MHz SDR)|Armbian Trixie - Linux 7.2 - stock DTB (eMMC disabled, rollback build)|' "$root/boot/extlinux/extlinux.conf"
+fi
 mkimage -A arm64 -T script -C none -n 'H728 Trixie v3' -d "$root/boot/boot.cmd" "$root/boot/boot.scr"
 install -m0644 "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb" "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+-stock.dtb"
 install -m0644 "$src/H728-README.txt" "$root/boot/H728-README.txt"

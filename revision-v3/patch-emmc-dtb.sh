@@ -1,7 +1,17 @@
 #!/bin/bash
 # Patch only the eMMC node of the matched 7.2 DTB, retaining its other devices.
+# Set H728_DTB_ROLLBACK=1 to skip the patch and keep the stock reference DTB
+# verbatim. This produces a binary-test image that disables the eMMC node
+# without touching GMAC1, USB, CPU or any other device, isolating whether the
+# v3 regression lives in this delta or in the upstream 7.2 reference DTB.
 set -euo pipefail
 dtb=$1
+
+if [[ "${H728_DTB_ROLLBACK:-0}" == "1" ]]; then
+    echo "patch-emmc-dtb: H728_DTB_ROLLBACK=1 set; leaving $dtb unchanged (stock reference)."
+    exit 0
+fi
+
 node=/soc/mmc@4022000
 for pair in 'vmmc-supply reg_cldo3' 'vqmmc-supply reg_cldo1'; do
     read -r property symbol <<<"$pair"
