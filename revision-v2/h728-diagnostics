@@ -6,6 +6,8 @@ report=$(mktemp /boot/.h728-diagnostics.XXXXXX) || exit 1
     echo "X96Q Pro+ H728 / Armbian v2 hardware report"
     date -Is
     uname -a
+    uptime
+    printf 'Load average: '; cat /proc/loadavg
     printf 'Model: '; tr '\0' '\n' </proc/device-tree/model
     printf 'CPU online: '; cat /sys/devices/system/cpu/online
     printf 'CPU possible: '; cat /sys/devices/system/cpu/possible
@@ -13,8 +15,18 @@ report=$(mktemp /boot/.h728-diagnostics.XXXXXX) || exit 1
     for policy in /sys/devices/system/cpu/cpufreq/policy*; do
         [ -d "$policy" ] || continue
         echo "$policy"
-        for name in affected_cpus scaling_driver scaling_governor cpuinfo_min_freq cpuinfo_max_freq scaling_cur_freq; do
+        for name in affected_cpus scaling_driver scaling_governor scaling_available_governors cpuinfo_min_freq cpuinfo_max_freq scaling_min_freq scaling_max_freq scaling_cur_freq; do
             printf '%s: ' "$name"; cat "$policy/$name" 2>/dev/null || true
+        done
+    done
+    for name in current_driver current_governor_ro; do
+        printf 'cpuidle %s: ' "$name"; cat "/sys/devices/system/cpu/cpuidle/$name" 2>/dev/null || true
+    done
+    for state in /sys/devices/system/cpu/cpu{0,4}/cpuidle/state*; do
+        [ -d "$state" ] || continue
+        echo "$state"
+        for name in name desc usage time; do
+            printf '%s: ' "$name"; cat "$state/$name" 2>/dev/null || true
         done
     done
     ip -br link
@@ -30,6 +42,15 @@ report=$(mktemp /boot/.h728-diagnostics.XXXXXX) || exit 1
     done
     lsusb
     lsusb -t
+    for device in /sys/bus/sdio/devices/*; do
+        [ -d "$device" ] || continue
+        echo "$device"
+        cat "$device/uevent"
+        readlink -f "$device/driver" || true
+    done
+    if command -v rfkill >/dev/null; then rfkill list; fi
+    if command -v iw >/dev/null; then iw dev; fi
+    ls -l /usr/lib/firmware/aic8800_sdio/ 2>/dev/null || true
     lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
     for zone in /sys/class/thermal/thermal_zone*; do
         [ -d "$zone" ] || continue

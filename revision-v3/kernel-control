@@ -1,0 +1,12 @@
+Package: linux-image-h728-manjaro
+Version: 7.2.0-7+h728.3
+Architecture: arm64
+Maintainer: Local X96Q Pro+ build <root@localhost>
+Depends: initramfs-tools, kmod
+Provides: linux-image
+Conflicts: linux-image-current-sunxi64, linux-dtb-current-sunxi64
+Section: kernel
+Priority: optional
+Description: Matched X96Q Pro+ H728 kernel, modules and DTB from junari 7.2-7
+ Repackaged from the reference Manjaro kernel package for this local image.
+ Actual kernel release: 7.2.0-7-MANJARO-ARM. Modules are decompressed for kmod.

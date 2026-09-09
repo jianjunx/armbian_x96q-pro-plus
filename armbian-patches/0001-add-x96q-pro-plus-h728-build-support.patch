@@ -1,0 +1,172 @@
+From a48657375734c047022cfefd25e0a7bed6fc35b4 Mon Sep 17 00:00:00 2001
+From: "JJ.Xie" <jj.xie@outlook.com>
+Date: Tue, 8 Sep 2026 12:07:14 +0800
+Subject: [PATCH] Add X96Q Pro+ H728 build support
+
+---
+ Dockerfile.h728-bootstrap         | 56 +++++++++++++++++++++++++++++++
+ config/boards/x96q-pro-plus.csc   | 51 ++++++++++++++++++++++++++++
+ lib/functions/general/oci-oras.sh |  4 +++
+ lib/functions/image/loop.sh       | 10 ++++++
+ 4 files changed, 121 insertions(+)
+ create mode 100644 Dockerfile.h728-bootstrap
+ create mode 100644 config/boards/x96q-pro-plus.csc
+
+diff --git a/Dockerfile.h728-bootstrap b/Dockerfile.h728-bootstrap
+new file mode 100644
+index 0000000..a388c22
+--- /dev/null
++++ b/Dockerfile.h728-bootstrap
+@@ -0,0 +1,56 @@
++FROM ubuntu:24.04
++
++# Use USTC's Ubuntu Ports mirror for faster and more reliable downloads in
++# mainland China. Ubuntu 24.04 stores its default repositories in deb822 form.
++RUN sed -i \
++        's|http://ports.ubuntu.com/ubuntu-ports|http://mirrors.ustc.edu.cn/ubuntu-ports|g' \
++        /etc/apt/sources.list.d/ubuntu.sources
++
++# Armbian's host preparation expects modprobe to exist even inside a
++# privileged build container. Keep the apt indexes in this reusable image so
++# subsequent dependency installation does not have to bootstrap from scratch.
++RUN apt-get -o Dpkg::Use-Pty=0 update \
++    && DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Use-Pty=0 install -y \
++        --no-install-recommends \
++        ca-certificates \
++        kmod \
++        bc \
++        bison \
++        build-essential \
++        device-tree-compiler \
++		e2fsprogs \
++        flex \
++        gcc-aarch64-linux-gnu \
++        git \
++        libgnutls28-dev \
++        libssl-dev \
++        libusb-1.0-0-dev \
++        lsb-release \
++        pkg-config \
++        python3 \
++        python3-dev \
++        python3-pyelftools \
++        python3-setuptools \
++        rsync \
++        swig \
++        u-boot-tools \
++        uuid-dev \
++		uuid-runtime \
++        xz-utils \
++        zstd
++
++RUN apt-get -o Dpkg::Use-Pty=0 update \
++	&& DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Use-Pty=0 install -y --no-install-recommends psmisc
++
++RUN apt-get -o Dpkg::Use-Pty=0 update \
++	&& DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Use-Pty=0 install -y --no-install-recommends libfdt-dev
++
++RUN apt-get -o Dpkg::Use-Pty=0 update \
++	&& DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Use-Pty=0 install -y --no-install-recommends shellcheck
++
++# OrbStack's Linux kernel has ext4 built in, but modprobe cannot discover it
++# as a loadable module.  Armbian checks it with modprobe before making the
++# image, so make that built-in case explicit inside this build-only container.
++RUN printf '%s\n' '#!/bin/sh' '[ "$1" = ext4 ] && exit 0' 'exec /usr/sbin/modprobe "$@"' \
++	> /usr/local/sbin/modprobe \
++	&& chmod 0755 /usr/local/sbin/modprobe
+diff --git a/config/boards/x96q-pro-plus.csc b/config/boards/x96q-pro-plus.csc
+new file mode 100644
+index 0000000..da4a7c1
+--- /dev/null
++++ b/config/boards/x96q-pro-plus.csc
+@@ -0,0 +1,51 @@
++# Allwinner H728 octa-core Cortex-A55 TV box, 2/4GB DDR3, GbE, eMMC, USB3
++BOARD_NAME="X96Q Pro+"
++BOARD_VENDOR="amediatech"
++BOARDFAMILY="sun55iw3"
++BOARD_MAINTAINER=""
++INTRODUCED="2026"
++
++BOOTCONFIG="x96q_pro_plus_defconfig"
++BOOT_FDT_FILE="allwinner/sun55i-h728-x96qpro+.dtb"
++OVERLAY_PREFIX="sun55i-h728"
++SERIALCON="ttyS0:115200"
++
++KERNEL_TARGET="current,edge"
++KERNEL_TEST_TARGET="current,edge"
++HAS_VIDEO_OUTPUT="no"
++POWER_MANAGEMENT_FEATURES="no"
++
++# Keep U-Boot at the standard sunxi 8 KiB offset and use a separate FAT boot
++# partition. This mirrors the known-working sun55iw3 layout used by Avaota A1.
++IMAGE_PARTITION_TABLE="msdos"
++BOOTFS_TYPE="fat"
++BOOTSTART="8192"
++BOOTSIZE="512"
++ROOTSTART="1056768"
++
++# The X96Q Pro+ needs the vendor-derived U-Boot from the working Manjaro
++# port.  Armbian's upstream v2026.07 source lacks this board defconfig.  The
++# blob below is built reproducibly from Manjaro's published source revisions
++# and includes the matching TF-A BL31, so do not build/fetch a separate TF-A.
++function late_family_config__x96qproplus_prebuilt_uboot() {
++	# This reference supplies only the package-version metadata.  The packaged
++	# payload comes exclusively from the b99f4a9 blob installed below.
++	declare -g BOOTBRANCH="tag:v2026.07"
++	declare -g ATFSOURCE="none"
++	declare -g ATFBRANCH=""
++	declare -g ATF_TARGET_MAP=""
++	declare -g UBOOT_HASH_EXTRA="x96qproplus-b99f4a9-0914b385"
++}
++
++# Package the verified board-specific boot blob using Armbian's normal U-Boot
++# artifact mechanism.  The blob is written by the sunxi platform installer at
++# the standard 8 KiB offset on the generated SD-card image.
++function build_custom_uboot__x96qproplus_prebuilt() {
++	local blob="${SRC}/cache/blobs/u-boot-sunxi-with-spl-x96qproplus-b99f4a9.bin"
++
++	[[ -s "${blob}" ]] || exit_with_error "Missing X96Q Pro+ prebuilt U-Boot blob" "${blob}"
++	install -D -m 0644 "${blob}" "${uboottempdir}/usr/lib/${uboot_name}/u-boot-sunxi-with-spl.bin"
++
++	declare -g -i uboot_target_counter=1
++	declare -g EXTENSION_BUILT_UBOOT=yes
++}
+diff --git a/lib/functions/general/oci-oras.sh b/lib/functions/general/oci-oras.sh
+index 187dd5e..617201b 100644
+--- a/lib/functions/general/oci-oras.sh
++++ b/lib/functions/general/oci-oras.sh
+@@ -88,6 +88,10 @@ function run_tool_oras() {
+ 	# Run oras, possibly with retries...
+ 	declare ORAS_HOME="${HOME:-"${TMPDIR}"}" # oras _requires_ a HOME to work atleast in 1.2+
+ 	declare -a oras_proxy_env=(
++		# Some registry proxies terminate long-lived HTTP/2 streams prematurely.
++		# Permit callers to override this, but prefer HTTP/1.1 for resilient
++		# artifact downloads in constrained network environments.
++		"GODEBUG=${GODEBUG:-http2client=0}"
+ 		"http_proxy=${http_proxy:-${HTTP_PROXY:-}}"
+ 		"https_proxy=${https_proxy:-${HTTPS_PROXY:-}}"
+ 		"HTTP_PROXY=${HTTP_PROXY:-${http_proxy:-}}"
+diff --git a/lib/functions/image/loop.sh b/lib/functions/image/loop.sh
+index 8aa75bb..3244423 100644
+--- a/lib/functions/image/loop.sh
++++ b/lib/functions/image/loop.sh
+@@ -30,6 +30,16 @@ function check_loop_device_internal() {
+ 			else
+ 				display_alert "Device node created OK" "${device}" "info"
+ 			fi
++		elif [[ $CONTAINER_COMPAT == yes && -r "/sys/class/block/$(basename "${device}")/dev" ]]; then
++			# Some container runtimes expose the partition through sysfs but do not
++			# mirror its device node into /dev.  Recreate it from the kernel-provided
++			# major:minor pair, just as the /tmp/dev compatibility path does above.
++			local device_major_minor
++			device_major_minor="$(< "/sys/class/block/$(basename "${device}")/dev")"
++			display_alert "Creating device node from sysfs" "${device} (${device_major_minor})"
++			run_host_command_logged mknod -m0660 "${device}" b "${device_major_minor%:*}" "${device_major_minor#*:}"
++			[[ -b "${device}" ]] || return 1
++			display_alert "Device node created OK" "${device}" "info"
+ 		else
+ 			display_alert "Device node does not exist yet" "${device}" "debug"
+ 			run_host_command_logged ls -la "${device}" || true
+-- 
+2.50.1 (Apple Git-155)
+

@@ -1,0 +1,17 @@
+DEFAULT armbian-h728
+TIMEOUT 30
+MENU TITLE X96Q Pro+ H728 Trixie v3
+
+LABEL armbian-h728
+    MENU LABEL Armbian Trixie - Linux 7.2 - eMMC enabled (52 MHz SDR)
+    LINUX /Image
+    INITRD /initrd.img-@KERNEL_VERSION@
+    FDT /dtb/allwinner/sun55i-h728-x96qpro+.dtb
+    APPEND root=UUID=@ROOT_UUID@ rootwait rw rootfstype=ext4 console=ttyS0,115200 earlycon=uart8250,mmio32,0x02500000 loglevel=6 panic=10
+
+LABEL stock-dtb
+    MENU LABEL Troubleshooting - upstream DTB with eMMC disabled
+    LINUX /Image
+    INITRD /initrd.img-@KERNEL_VERSION@
+    FDT /dtb/allwinner/sun55i-h728-x96qpro+-stock.dtb
+    APPEND root=UUID=@ROOT_UUID@ rootwait rw rootfstype=ext4 console=ttyS0,115200 earlycon=uart8250,mmio32,0x02500000 loglevel=7 panic=10

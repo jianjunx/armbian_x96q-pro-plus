@@ -7,3 +7,6 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  uboot-x96qprop
 e2c3d7b69092830421b5f6b15bfee125ed9a43ac29675149abc38809646ced24  uboot-x96qproplus/uboot-x96qproplus.install
 88d4f914cc395a8fad040da12055de5178134c1c88f27a79bc3afb9897e64a69  reference-packages/linux-sunxi-6.17-2-aarch64.pkg.tar.zst
 0914b3859e86f91e8bdfc64d19b1f3ad3036c50521a0c00b2bce578982145b7c  build-artifacts/u-boot-sunxi-with-spl-x96qproplus-b99f4a9.bin
+1b921a23d1f9f952a2b2d53f99a431f5d6450a2aa4b815d24b3c7b9606782ab6  reference-packages/aic8800d80-firmware-2025.03-1-any.pkg.tar.zst
+b45281c8ab874587f85e0d6926273a79f88f8ab637c46b3a67616f1f60d5aa1d  reference-packages/linux-sunxi-7.2-7-aarch64.pkg.tar.xz
+6a00bb657b0de11d622666b5e344004ace82cd234246369f82fe40daf0ff5806  build-artifacts/u-boot-sunxi-with-spl-emmc-v3.bin

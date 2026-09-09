@@ -1,0 +1,121 @@
+#!/bin/bash
+# Read-only by default. Destructive installation requires --install and a
+# confirmation that includes the detected eMMC device and its CID suffix.
+set -euo pipefail
+mode=${1:---check}
+[[ $# -le 1 && ( $mode == --check || $mode == --install ) ]] || {
+    echo 'Usage: sudo h728-install-emmc [--check|--install]' >&2; exit 1;
+}
+[[ $EUID -eq 0 ]] || { echo 'Run as root.' >&2; exit 1; }
+[[ $(tr -d '\0' </proc/device-tree/model) == 'X96Q Pro+' ]] || {
+    echo 'This installer is only for X96Q Pro+.' >&2; exit 1;
+}
+[[ $(uname -r) == 7.2.0-7-MANJARO-ARM ]] || { echo 'Boot the v3 kernel first.'; exit 1; }
+targets=()
+for path in /sys/block/mmcblk[0-9]*; do
+    # boot0/boot1 are separate block devices but belong to the same eMMC.
+    [[ ${path##*/} =~ ^mmcblk[0-9]+$ ]] || continue
+    [[ -f $path/device/type ]] || continue
+    [[ $(<"$path/device/type") == MMC ]] && targets+=("/dev/${path##*/}")
+done
+[[ ${#targets[@]} -eq 1 ]] || { echo "Expected one eMMC; found ${#targets[@]}."; exit 1; }
+target=${targets[0]}
+[[ $target =~ ^/dev/mmcblk[0-9]+$ && -b $target ]] || exit 1
+source_part=$(readlink -f "$(findmnt -n -o SOURCE /)")
+source_disk=$(lsblk -ndo PKNAME "$source_part")
+[[ $source_disk =~ ^mmcblk[0-9]+$ ]] || { echo 'Root must be on a physical SD card.'; exit 1; }
+[[ $(<"/sys/block/$source_disk/device/type") == SD && /dev/$source_disk != "$target" ]] || {
+    echo 'Refusing: the running root filesystem is not on a separate SD card.'; exit 1;
+}
+assert_unused() {
+    if lsblk -nrpo MOUNTPOINTS "$target" | grep -q '[^[:space:]]'; then
+        echo 'eMMC contains a mounted filesystem or active swap. Unmount it first.'; exit 1
+    fi
+    for entry in /sys/class/block/"${target##*/}" /sys/class/block/"${target##*/}"p*; do
+        [[ -d $entry/holders ]] || continue
+        if compgen -G "$entry/holders/*" >/dev/null; then
+            echo 'eMMC has an active device-mapper/RAID holder; refusing.'; exit 1
+        fi
+    done
+    [[ $(blockdev --getro "$target") == 0 ]] || { echo 'eMMC is read-only.'; exit 1; }
+}
+assert_unused
+cid=$(<"/sys/block/${target##*/}/device/cid")
+capacity=$(blockdev --getsize64 "$target")
+used=$(df -B1 --output=used / | tail -1 | tr -d ' ')
+(( capacity >= 8 * 1024 * 1024 * 1024 && capacity > used + 2 * 1024 * 1024 * 1024 )) || {
+    echo 'Insufficient eMMC capacity for the current root filesystem plus headroom.'; exit 1;
+}
+blob=/usr/lib/h728/uboot/u-boot-sunxi-with-spl-emmc.bin
+(cd /usr/lib/h728/uboot && sha256sum -c emmc-uboot.sha256)
+echo "Running SD root: $source_part"
+echo "Detected eMMC: $target; CID: $cid; bytes: $capacity"
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS "$target"
+echo 'Read test: first 256 MiB of eMMC (no write).'
+dd if="$target" of=/dev/null bs=4M count=64 iflag=direct status=progress
+if [[ $mode == --check ]]; then
+    echo 'Read-only checks passed. This does not establish write stability or eMMC cold-boot compatibility.'
+    echo 'After backing up Android/data and testing v3, run: sudo h728-install-emmc --install'
+    exit 0
+fi
+echo "WARNING: All partitions and data in $target user area, including Android, will be overwritten."
+echo 'This copies the live SD installation; stop databases and other write-heavy workloads first.'
+echo 'The eMMC boot0/boot1 areas and EXT_CSD boot configuration are not changed.'
+token="ERASE $target ${cid: -8}"
+echo "To continue, type exactly: $token"
+read -r answer </dev/tty
+[[ $answer == "$token" ]] || { echo 'Cancelled.'; exit 1; }
+assert_unused
+[[ $(<"/sys/block/${target##*/}/device/cid") == "$cid" ]] || exit 1
+work=$(mktemp -d /tmp/h728-emmc-install.XXXXXX)
+dest=$work/dest
+cleanup() {
+    for path in "$dest/boot" "$dest"; do
+        if mountpoint -q "$path"; then umount "$path"; fi
+    done
+}
+trap cleanup EXIT
+mkdir -p "$dest"
+wipefs --all "$target"
+printf 'label: dos\nunit: sectors\n\nstart=8192, size=1048576, type=c, bootable\nstart=1056768, type=83\n' | sfdisk "$target"
+partprobe "$target"
+udevadm settle --timeout=20
+boot=${target}p1
+rootpart=${target}p2
+[[ -b $boot && -b $rootpart ]] || { echo 'Partition devices did not appear.'; exit 1; }
+mkfs.vfat -F32 -n H728_BOOT "$boot"
+mkfs.ext4 -F -L h728_emmc "$rootpart"
+mount "$rootpart" "$dest"
+# Write/read test on a newly created file, after the explicit destructive consent.
+expected=$(dd if=/dev/urandom bs=1M count=64 status=none | tee "$dest/.h728-io-test" | sha256sum | cut -d' ' -f1)
+sync -f "$dest/.h728-io-test"
+actual=$(dd if="$dest/.h728-io-test" bs=4M iflag=direct status=none | sha256sum | cut -d' ' -f1)
+[[ $actual == "$expected" ]] || { echo 'eMMC write/read verification failed; continue using SD.'; exit 1; }
+rm "$dest/.h728-io-test"
+mkdir "$dest/boot"
+mount "$boot" "$dest/boot"
+rsync -aHAXx --numeric-ids --info=progress2 \
+    --exclude=/dev/ --exclude=/proc/ --exclude=/sys/ --exclude=/run/ \
+    --exclude=/tmp/ --exclude=/mnt/ --exclude=/media/ --exclude=/boot/ \
+    --exclude=/lost+found / "$dest/"
+mkdir -p "$dest"/{dev,proc,sys,run,tmp,mnt,media}
+chmod 1777 "$dest/tmp"
+rsync -rt --info=progress2 /boot/ "$dest/boot/"
+rootuuid=$(blkid -s UUID -o value "$rootpart")
+bootuuid=$(blkid -s UUID -o value "$boot")
+awk -v r="$rootuuid" -v b="$bootuuid" '
+    $2 == "/" { $1="UUID=" r }
+    $2 == "/boot" { $1="UUID=" b }
+    { print }
+' "$dest/etc/fstab" >"$work/fstab"
+install -m0644 "$work/fstab" "$dest/etc/fstab"
+sed -i "s/^rootdev=.*/rootdev=UUID=$rootuuid/" "$dest/boot/armbianEnv.txt"
+sed -i -E "s/root=UUID=[0-9a-f-]+/root=UUID=$rootuuid/g" "$dest/boot/extlinux/extlinux.conf"
+dd if="$blob" of="$target" bs=1024 seek=8 conv=notrunc,fsync status=progress
+cmp -n "$(stat -c%s "$blob")" -i 8192:0 "$target" "$blob"
+sync
+cleanup
+trap - EXIT
+echo 'Installation and basic write/read verification finished. No automatic reboot.'
+echo 'Power off, remove SD, then power on and test Ethernet/SSH.'
+echo 'Standalone eMMC boot is experimental; if it fails, reinsert the working SD card.'

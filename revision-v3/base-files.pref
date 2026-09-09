@@ -1,0 +1,4 @@
+Explanation: Keep Debian 13 base-files compatible with the locally adapted BSP.
+Package: base-files
+Pin: release o=Debian
+Pin-Priority: 1001

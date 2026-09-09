@@ -3,7 +3,37 @@
 Downloaded on 2026-08-28 for building an experimental Armbian image for the
 X96Q Pro+ (Allwinner H728).
 
-## Current delivery: v2 compatibility image (2026-09-08)
+## Current delivery: v3 Trixie / Linux 7.2 image (2026-09-09)
+
+Image: `armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.img`
+(4 GiB; use an SD card of at least 8 GB).
+SHA-256: `46b5720330065a731169f60bab260b0b46a23f8b1ec37e4497e690078ddebfec`.
+
+See `revision-v3/README.md` for SD boot, Wi-Fi, diagnostics and the eMMC
+migration tool. The user requested Trixie, the new reference kernel and eMMC
+installation support. The new image upgrades a pristine v2 release copy
+offline; it does not contain data from the user's running box. Kernel version
+is `7.2.0-7-MANJARO-ARM`, paired with its modules and board DTB, plus an explicit
+eMMC-only DTB change (8-bit, matched regulators, 52 MHz SDR). AIC8800D80 firmware
+and schedutil configuration are included. The SD bootloader is unchanged;
+the separately built eMMC bootloader enables MMC slot 2 and conservative timing.
+
+Offline verification passed. Filesystem checks, package inventory and SHA-256
+are next to the image. New-kernel SD boot, Wi-Fi association, USB transfers,
+DVFS, eMMC writes and standalone eMMC boot still require physical testing.
+The eMMC installer defaults to read-only checks and requires an exact typed
+device/CID confirmation before overwriting the eMMC user area and Android.
+
+## Previous delivery: v2 compatibility image (2026-09-08)
+
+2026-09-09 update: the user confirmed v2 boots. Their diagnostic report
+confirms eight CPUs online and Ethernet at 1000 Mbps/full duplex with DHCP.
+USB host controllers enumerate, but that report contains no external USB
+peripheral transfer test. Wi-Fi probes successfully but fails while loading
+missing AIC8800D80 firmware. See `revision-v2.1/README.md` for the prepared
+firmware + schedutil repair bundle and `revision-v2.1/ASSESSMENT.md` for the
+kernel/Trixie assessment. This repair has passed offline installation checks;
+post-repair Wi-Fi operation and DVFS stability await the user's test.
 
 Use `armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Bookworm_6.17-2_v2.img`.
 SHA-256: `f3718e92a5ee1bfbc2f227bd3144f2c6f0234e6a761b5facd7ddd8b63c91ec29`.
@@ -94,6 +124,6 @@ archives. It is a 755 KiB Allwinner eGON/SPL image, embeds the
 This proves the known X96Q Pro+ bootloader recipe builds reproducibly. It is
 included unchanged at offset 8192 bytes in both SD images. The user tested
 the original SD image and reported a black screen and no DHCP lease. V2 has
-passed offline checks and awaits a physical SD-card boot test. We have not
+passed offline checks and the user's physical SD-card boot test. We have not
 written any physical SD card or box eMMC. Do not install to eMMC until an
 SD-card boot has been validated, preferably over the 3.3 V UART console.

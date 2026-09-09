@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://mirrors.tuna.tsinghua.edu.cn/armbian
+Suites: trixie
+Components: main trixie-utils
+Signed-By: /usr/share/keyrings/armbian-archive-keyring.gpg
