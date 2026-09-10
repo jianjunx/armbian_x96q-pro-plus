@@ -4,7 +4,11 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/image-release.yml'
-      - 'ci/**'
+      - 'ci/Dockerfile'
+      - 'ci/build.sh'
+      - 'ci/bundle.sha256'
+      - 'ci/inputs.sha256'
+      - 'ci/release-notes.md'
       - 'revision-v3/**'
       - 'revision-v3.1/**'
     tags: ['v3.1.*']
