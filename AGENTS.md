@@ -54,6 +54,9 @@ It requires the separately hosted hash-pinned original-v3 input bundle; Git alon
 does not contain all materials. Never substitute a physical-device backup. CI
 reassembles v3.1, not a source-built kernel. Do not claim a Release exists until
 the workflow and actual asset upload have succeeded.
+Bootstrap `build-inputs-v3` and image prerelease `v3.1.0-ci.3.1` now exist.
+Actions run 34463277020 passed offline assembly/verification and published eight
+assets from commit `a62596c`; this still is not physical-hardware validation.
 
 The working setup is macOS plus an ARM64 privileged Linux container named `h728-image-build`. The host `armbian-build/` directory is mounted at `/armbian` inside the container. Image partition work requires Linux loop devices, mounts, chroot, device nodes, `dtc`/`fdtget`/`fdtput`, `mkimage`, `dpkg`, and filesystem tools; run it in that container.
 

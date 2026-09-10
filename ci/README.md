@@ -9,6 +9,11 @@ packages remain pinned to the original v3 base and the local +h728.4 repair.
 
 ## One-time bootstrap
 
+The repository bootstrap was completed on 2026-09-10: `build-inputs-v3` is a
+public prerelease, and Actions run 34463277020 downloaded it successfully. The
+steps below document how to recreate the bootstrap after an intentional input
+change or in another repository; do not repeat them for normal builds.
+
 1. Review third-party binary redistribution conditions (especially the AIC
    firmware's unknown license) before making the input/image assets public.
 2. Run `pack-inputs.sh /path/to/inputs.sha256` inside `h728-image-build`.

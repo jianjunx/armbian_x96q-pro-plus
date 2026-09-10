@@ -25,6 +25,16 @@ v3 还包含实验性 eMMC 支持：Linux DTB 启用 eMMC 并限制为 52 MHz SD
 
 ## 获取和使用 v3.1
 
+GitHub Actions 构建的实验性预发布：
+[v3.1.0-ci.3.1](https://github.com/jianjunx/armbian_x96q-pro-plus/releases/tag/v3.1.0-ci.3.1)。
+下载 `Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1_SD.img.xz` 和
+`SHA256SUMS`。压缩包 SHA-256 为
+`1f1612822f27a56c034073900599765499488647c9b42ef177a3e747c4ddcad5`；
+解压后镜像 SHA-256 为
+`57484562bc985bb1c240a963f84a7da327d9ffe9e080e4403026cb4d2a64d4e6`。
+对应的 [Actions 运行](https://github.com/jianjunx/armbian_x96q-pro-plus/actions/runs/34463277020)
+已完成离线校验。该镜像仍未经过 v3.1 真机启动和外设测试。
+
 本地构建后的镜像路径：
 
 ```text
@@ -39,9 +49,9 @@ d9357a2223d29fdfa8373c9a37b35b3384e53edb14013b4b2ae9f086f776f408
 
 大文件由 `.gitignore` 排除，不进入 Git 历史。[Actions 构建发布流程](ci/README.md)
 会在构建相关代码推送到 `main` 后，自动组装、校验并发布实验性 Release。
-首次运行前需要将固定的离线输入归档到 `build-inputs-v3` Release；目前尚未完成
-该归档，不能认为云端已有可下载镜像。CI 每次生成新 UUID，校验码以对应 Release
-中的 `SHA256SUMS` 为准，上述哈希仅对应本地成品。
+固定离线输入已归档到独立的 `build-inputs-v3` 预发布，并经过大小和哈希校验。
+CI 每次生成新 UUID，因此本地镜像和 CI 镜像的哈希不同；始终以对应 Release
+中的 `SHA256SUMS` 为准。
 
 首次测试建议：
 

@@ -9,9 +9,20 @@ CI bootstrap bundle: `armbian-build/output/ci-inputs/h728-v3-inputs.tar.xz`.
 Its six-file allowlist and payload hashes are in `ci/inputs.sha256`, and the
 archive hash is in `ci/bundle.sha256` and top-level SHA256SUMS. It contains only
 the pristine original-v3 build inputs, not a physical-device backup. The bundle
-has been prepared and tested locally; uploading it to `build-inputs-v3` is still
-required before Actions can build. See `ci/README.md` for bootstrap and licensing
-limitations. CI produces a fresh image/hash and must not reuse the local v3.1 hash.
+was uploaded and verified as the public prerelease `build-inputs-v3`; its remote
+asset size is 1172444264 bytes and GitHub reports the expected SHA-256. See
+`ci/README.md` for bootstrap and licensing limitations. CI produces a fresh
+image/hash and must not reuse the local v3.1 hash.
+
+GitHub Actions run 34463277020 assembled and passed the complete offline checks,
+then published prerelease `v3.1.0-ci.3.1` from source commit
+`a62596cb9ac968512f2dc8404b06864fb3b54403`. Release assets include the compressed
+image, checksums, build/verification logs, package inventory and provenance.
+Compressed image SHA-256:
+`1f1612822f27a56c034073900599765499488647c9b42ef177a3e747c4ddcad5`.
+Decompressed image SHA-256:
+`57484562bc985bb1c240a963f84a7da327d9ffe9e080e4403026cb4d2a64d4e6`.
+This is successful cloud assembly and offline verification, not hardware proof.
 
 The user selected a complete fresh SD system, leaving existing eMMC untouched.
 Build instructions: `revision-v3.1/README.md`. Reuses the hash-pinned original
