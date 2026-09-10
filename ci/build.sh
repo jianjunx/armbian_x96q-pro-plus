@@ -32,3 +32,6 @@ test "$(cat compressed-raw.sha256)" = "$(awk '{print $1}' SHA256SUMS)"
 sha256sum "$image.xz" >>SHA256SUMS
 test "$(stat -c%s "$image.xz")" -lt 2147483648
 sha256sum -c SHA256SUMS
+# Files were created by the privileged root container, while the following
+# GitHub Actions release step runs as the host runner user.
+chown -R "$(stat -c %u /src):$(stat -c %g /src)" /armbian/delivery
