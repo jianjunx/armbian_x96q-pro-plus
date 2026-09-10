@@ -2,12 +2,12 @@
 # Shared variables are consumed by scripts sourcing this file.
 # shellcheck disable=SC2034
 set -euo pipefail
-src=/armbian/cache/h728-v3-input
-cache=/armbian/cache/h728-v3
-image=$cache/v3-working.img
+src=${H728_INPUT_DIR:-/armbian/cache/h728-v3-input}
+cache=${H728_CACHE_DIR:-/armbian/cache/h728-v3}
+image=${H728_IMAGE:-$cache/v3-working.img}
 version=7.2.0-7-MANJARO-ARM
 ref=/armbian/cache/h728-audit/reference-7.2
-package=/armbian/output/debs/linux-image-h728-manjaro_7.2.0-7+h728.3_arm64.deb
+package=${H728_KERNEL_PACKAGE:-/armbian/output/debs/linux-image-h728-manjaro_7.2.0-7+h728.3_arm64.deb}
 mkdir -p "$cache"
 mount_image() {
     local readonly=${1:-no}

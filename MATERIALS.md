@@ -3,7 +3,39 @@
 Downloaded on 2026-08-28 for building an experimental Armbian image for the
 X96Q Pro+ (Allwinner H728).
 
-## Current delivery: v3 Trixie / Linux 7.2 image (2026-09-09)
+## v3.1 full SD refresh (2026-09-10)
+
+CI bootstrap bundle: `armbian-build/output/ci-inputs/h728-v3-inputs.tar.xz`.
+Its six-file allowlist and payload hashes are in `ci/inputs.sha256`, and the
+archive hash is in `ci/bundle.sha256` and top-level SHA256SUMS. It contains only
+the pristine original-v3 build inputs, not a physical-device backup. The bundle
+has been prepared and tested locally; uploading it to `build-inputs-v3` is still
+required before Actions can build. See `ci/README.md` for bootstrap and licensing
+limitations. CI produces a fresh image/hash and must not reuse the local v3.1 hash.
+
+The user selected a complete fresh SD system, leaving existing eMMC untouched.
+Build instructions: `revision-v3.1/README.md`. Reuses the hash-pinned original
+4 GiB v3 image and `linux-image-h728-manjaro_7.2.0-7+h728.3_arm64.deb` as offline
+inputs; their hashes and the repair bundle hash are now in SHA256SUMS. New
+package revision +h728.4 changes the packaged board DTB supply only; the actual
+kernel release and modules remain 7.2.0-7-MANJARO-ARM. No new reference downloads
+or claims of source-built Linux. Proven SD U-Boot remains byte-identical.
+
+Hardware investigations established SD-assisted eMMC root operation, not
+standalone eMMC boot. Original user logs are excluded from Git. The full SD
+refresh blocks eMMC installation and preserves old image deliverables.
+
+v3.1 delivery: `armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1_SD.img`,
+4294967296 bytes. SHA-256:
+`d9357a2223d29fdfa8373c9a37b35b3384e53edb14013b4b2ae9f086f776f408`.
+Published after read-only verification and byte-for-byte copy verification.
+The adjacent verification/package/checksum files are retained. Hardware testing
+of this new image remains pending. The first failed UUID-change intermediate
+is explicitly labelled under cache, is not a deliverable, and never replaced v3.
+Build warnings concerned ENE UB6250 USB-reader firmware, not AIC Wi-Fi firmware;
+compatibility with those external readers is not claimed.
+
+## Previous delivery: v3 Trixie / Linux 7.2 image (2026-09-09)
 
 Image: `armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.img`
 (4 GiB; use an SD card of at least 8 GB).

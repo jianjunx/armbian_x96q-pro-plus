@@ -2,7 +2,7 @@
 # Literal variable expressions below are interpreted by dpkg, sh and Perl.
 # shellcheck disable=SC2016
 # shellcheck source=common.sh
-source /armbian/cache/h728-v3-input/common.sh
+source "${H728_COMMON:-/armbian/cache/h728-v3-input/common.sh}"
 test -f "$cache/finalized"
 mount_image yes
 test "$(stat -c%s "$image")" -eq 4294967296
@@ -51,7 +51,8 @@ test "$uuid" != 0956215a-b771-4b93-8a68-d968be52fcfe
 grep -q "root=UUID=$uuid" "$root/boot/extlinux/extlinux.conf"
 grep -qx "rootdev=UUID=$uuid" "$root/boot/armbianEnv.txt"
 grep -q "$uuid" "$root/etc/fstab"
-grep -q '7283-0001' "$root/etc/fstab"
+bootuuid=$(blkid -s UUID -o value "${loop}p1")
+grep -q "$bootuuid" "$root/etc/fstab"
 while read -r directive path _; do
     case "$directive" in LINUX|INITRD|FDT) test -s "$root/boot$path" ;; esac
 done <"$root/boot/extlinux/extlinux.conf"
@@ -60,7 +61,7 @@ grep -qx VERSION_CODENAME=trixie "$root/etc/os-release"
 chroot "$root" dpkg --audit
 chroot "$root" apt-get check
 chroot "$root" dpkg-query -W base-files libc6 systemd openssh-server linux-image-h728-manjaro
-test "$(chroot "$root" dpkg-query -W -f='${Version}' linux-image-h728-manjaro)" = 7.2.0-7+h728.3
+test "$(chroot "$root" dpkg-query -W -f='${Version}' linux-image-h728-manjaro)" = "${H728_KERNEL_PACKAGE_VERSION:-7.2.0-7+h728.3}"
 chroot "$root" apt-mark showhold | grep -qx linux-image-h728-manjaro
 for tool in iw rfkill wpa_supplicant rsync partprobe mkfs.vfat mkfs.ext4; do
     chroot "$root" sh -c 'command -v "$1"' _ "$tool"

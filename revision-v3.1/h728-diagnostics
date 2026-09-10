@@ -1,0 +1,37 @@
+#!/bin/bash
+# Writes only SD report files; never scans or mounts eMMC filesystems.
+set -euo pipefail
+mountpoint -q /boot || exit 0
+exec 9>/run/h728-diagnostics.lock
+flock -n 9 || exit 0
+(( $(df -Pk /boot | awk 'END {print $4}') >= 32768 )) || exit 0
+boot_id=$(cat /proc/sys/kernel/random/boot_id)
+[[ $boot_id =~ ^[0-9a-f-]{36}$ ]] || exit 1
+base=/boot/h728-logs
+mkdir -p "$base"
+# Keep at most eight other boot directories; each has only one rolling report.
+mapfile -t old < <(find "$base" -mindepth 1 -maxdepth 1 -type d ! -name "$boot_id" -printf '%T@ %f\n' | sort -nr | awk 'NR>8 {print $2}')
+for id in "${old[@]}"; do
+    [[ $id =~ ^[0-9a-f-]{36}$ && ! -L $base/$id ]] || continue
+    # Only known diagnostic files can be pruned, not arbitrary directory trees.
+    rm -f "$base/$id/report.txt" "$base/$id/running.dtb" "$base/$id/running.dts" "$base/$id/dtc-errors.txt"
+    rmdir "$base/$id" 2>/dev/null || true
+done
+out=$base/$boot_id
+mkdir -p "$out"
+report=$(mktemp /boot/.h728-report.XXXXXX)
+{
+    printf 'H728 v3.1 full SD report; boot_id=%s\n' "$boot_id"
+    timeout 60 /usr/local/lib/h728-diagnostics-base || true
+    echo '=== Actual root / boot ==='
+    findmnt -rn -o SOURCE,TARGET,FSTYPE
+    echo '=== Regulator snapshot (software state, not voltage measurement) ==='
+    timeout 5 cat /sys/kernel/debug/regulator/regulator_summary || true
+} >"$report" 2>&1
+cp "$report" "$out/report.txt"
+mv "$report" /boot/h728-diagnostics.txt
+if [[ ! -f $out/running.dts ]]; then
+    timeout 5 dtc -q -I fs -O dts /proc/device-tree >"$out/running.dts" 2>"$out/dtc-errors.txt" || true
+    [[ ! -r /sys/firmware/fdt ]] || cp /sys/firmware/fdt "$out/running.dtb"
+fi
+sync -f /boot

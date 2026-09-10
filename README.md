@@ -6,8 +6,14 @@
 
 ## 当前状态
 
+2026-09-10：新完整 SD 镜像开发转入 [revision-v3.1](revision-v3.1/README.md)。
+默认运行 SD 根系统，保留盒子现有 eMMC，不自动迁移。v3 修正后已验证
+SD 启动和 SD 引导/eMMC 根系统的 SSH、千兆网络；独立 eMMC 启动仍失败。
+这些真机结果更新了下表的早期状态，但不能替代 v3.1 镜像实测。
+
 | 版本 | 用户空间 / 内核 | 状态 |
 | --- | --- | --- |
+| v3.1 | Debian 13 Trixie / `7.2.0-7-MANJARO-ARM` | 完整 SD 修复镜像，离线校验通过，待新镜像真机复测；禁用 eMMC 安装 |
 | v3 | Debian 13 Trixie / `7.2.0-7-MANJARO-ARM` | 最新测试镜像；已通过离线校验，等待真机验证 |
 | v2.1 | v2 上的 Wi-Fi 固件与 `schedutil` 补丁 | 已通过离线安装验证，等待真机验证 |
 | v2 | Debian 12 Bookworm / `6.17.0-rc1-2-MANJARO-ARM+` | **真机确认可从 SD 启动**；八核、千兆有线网正常 |
@@ -17,23 +23,32 @@ v2 真机诊断还确认 USB2/USB3 root hub 已注册；当时未插外设，因
 
 v3 还包含实验性 eMMC 支持：Linux DTB 启用 eMMC 并限制为 52 MHz SDR；独立编译的 eMMC U-Boot 启用 MMC slot 2。eMMC 实际写入和拔卡冷启动尚未验证。
 
-## 获取和使用 v3
+## 获取和使用 v3.1
 
 本地构建后的镜像路径：
 
 ```text
-armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.img
+armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1_SD.img
 ```
 
 镜像约 4 GiB，需要至少 8 GB 的 SD 卡。SHA-256：
 
 ```text
-46b5720330065a731169f60bab260b0b46a23f8b1ec37e4497e690078ddebfec
+d9357a2223d29fdfa8373c9a37b35b3384e53edb14013b4b2ae9f086f776f408
 ```
 
-大文件由 `.gitignore` 排除，GitHub 仓库不包含可直接下载的镜像、参考内核包或源码归档。已有本地工作区可在上述路径找到产物；新的克隆需要按照 [v3 构建说明](revision-v3/README.md)准备对应物料。
+大文件由 `.gitignore` 排除，不进入 Git 历史。[Actions 构建发布流程](ci/README.md)
+会在构建相关代码推送到 `main` 后，自动组装、校验并发布实验性 Release。
+首次运行前需要将固定的离线输入归档到 `build-inputs-v3` Release；目前尚未完成
+该归档，不能认为云端已有可下载镜像。CI 每次生成新 UUID，校验码以对应 Release
+中的 `SHA256SUMS` 为准，上述哈希仅对应本地成品。
 
 首次测试建议：
+
+先完整备份现有可用 SD 卡。v3.1 烧录后默认运行全新 SD 系统，不再默认
+进入现有 eMMC 根系统；eMMC 内容不迁移、不覆盖。修复范围、诊断和构建流程
+见 [v3.1 说明](revision-v3.1/README.md)。后文的 v3 安装/构建说明为历史流程，
+不要用旧安装器绕过 v3.1 的 eMMC 安装限制。
 
 1. 将完整 `.img` 写入 SD 卡，并启用写后校验。
 2. 盒子断电插卡，连接网线后上电，等待约 2 分钟。

@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+[[ $# -le 1 && ${1:---check} == --check ]] || {
+    echo 'eMMC installation is disabled in v3.1: standalone boot is unresolved.' >&2
+    echo 'This image only supports: sudo h728-install-emmc --check' >&2
+    exit 1
+}
+[[ $EUID == 0 ]] || { echo 'Run as root.'; exit 1; }
+[[ $(tr -d '\0' </proc/device-tree/model) == 'X96Q Pro+' ]] || exit 1
+[[ $(uname -r) == 7.2.0-7-MANJARO-ARM ]] || exit 1
+echo 'Read-only inventory. No partitions will be mounted or written.'
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
+for path in /sys/block/mmcblk[0-9]*; do
+    [[ ${path##*/} =~ ^mmcblk[0-9]+$ && -r $path/device/type ]] || continue
+    printf '%s type=%s\n' "${path##*/}" "$(cat "$path/device/type")"
+done
+echo 'Detection is not proof of standalone eMMC boot or write stability.'

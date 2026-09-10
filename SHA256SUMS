@@ -10,3 +10,9 @@ e2c3d7b69092830421b5f6b15bfee125ed9a43ac29675149abc38809646ced24  uboot-x96qprop
 1b921a23d1f9f952a2b2d53f99a431f5d6450a2aa4b815d24b3c7b9606782ab6  reference-packages/aic8800d80-firmware-2025.03-1-any.pkg.tar.zst
 b45281c8ab874587f85e0d6926273a79f88f8ab637c46b3a67616f1f60d5aa1d  reference-packages/linux-sunxi-7.2-7-aarch64.pkg.tar.xz
 6a00bb657b0de11d622666b5e344004ace82cd234246369f82fe40daf0ff5806  build-artifacts/u-boot-sunxi-with-spl-emmc-v3.bin
+46b5720330065a731169f60bab260b0b46a23f8b1ec37e4497e690078ddebfec  armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.img
+f437b98bf59b8ad78f5aa58ee0294c9a1ccfe344229078cf8e9e2251df6f6a40  armbian-build/output/debs/linux-image-h728-manjaro_7.2.0-7+h728.3_arm64.deb
+d94be64757c9860c1d68ef88aa0acf552735b48076edb0fc12223bb76dbca629  armbian-build/output/repairs/h728-v2.1-repair.tar.gz
+44c5790fb6a5c266a16b367ab7a90b70e019a2c5121460a0b5139d5b3ebb8da3  armbian-build/output/debs/linux-image-h728-manjaro_7.2.0-7+h728.4_arm64.deb
+d9357a2223d29fdfa8373c9a37b35b3384e53edb14013b4b2ae9f086f776f408  armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1_SD.img
+0fadc7164369a215f7d20b74454906dc79dd7934065f34eb6761aefc07b97c46  armbian-build/output/ci-inputs/h728-v3-inputs.tar.xz

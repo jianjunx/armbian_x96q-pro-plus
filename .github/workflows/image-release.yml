@@ -1,0 +1,88 @@
+name: Build and release v3.1 SD image
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/image-release.yml'
+      - 'ci/**'
+      - 'revision-v3/**'
+      - 'revision-v3.1/**'
+    tags: ['v3.1.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: image-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Require main or a release tag and native ARM64
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ "$REF_TYPE" = tag ]]; then
+            [[ "$REF_NAME" =~ ^v3\.1\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]
+          else
+            test "$REF_NAME" = main
+          fi
+          test "$(uname -m)" = aarch64
+          test "$(df -B1 --output=avail . | tail -1)" -gt 10737418240
+      - name: Download pinned offline build inputs
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p armbian-build
+          if ! curl --fail --location --retry 3 --output h728-v3-inputs.tar.xz \
+            "https://github.com/$REPOSITORY/releases/download/build-inputs-v3/h728-v3-inputs.tar.xz"; then
+            echo '::error::Pinned build inputs unavailable. Complete one-time build-inputs-v3 Release bootstrap described in ci/README.md.'
+            exit 1
+          fi
+          sha256sum -c ci/bundle.sha256
+          tar -xJf h728-v3-inputs.tar.xz -C armbian-build --no-same-owner
+          (cd armbian-build && sha256sum -c ../ci/inputs.sha256)
+      - name: Build ARM64 assembly environment
+        run: docker build -t h728-ci -f ci/Dockerfile .
+      - name: Assemble, verify and compress a fresh SD image
+        run: |
+          docker run --rm --privileged --name h728-ci-build \
+            -v "$PWD:/src:ro" -v "$PWD/armbian-build:/armbian" h728-ci
+      - name: Publish verified prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          COMMIT: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [[ "$REF_TYPE" = tag ]]; then
+            tag_args=(--verify-tag)
+          else
+            TAG="v3.1.0-ci.${RUN_NUMBER}.${RUN_ATTEMPT}"
+            tag_args=(--target "$COMMIT")
+          fi
+          cp ci/release-notes.md armbian-build/delivery/release-notes.md
+          printf '\nSource commit: `%s`\n\nActions run: %s\n' "$COMMIT" "$RUN_URL" >>armbian-build/delivery/release-notes.md
+          printf 'commit=%s\nrun=%s\n' "$COMMIT" "$RUN_URL" >armbian-build/delivery/build-provenance.txt
+          # Create fails if the release already exists; never clobber assets.
+          gh release create "$TAG" "${tag_args[@]}" --draft --prerelease \
+            --title "H728 $TAG — experimental full SD image" \
+            --notes-file armbian-build/delivery/release-notes.md
+          gh release upload "$TAG" armbian-build/delivery/*.img.xz \
+            armbian-build/delivery/SHA256SUMS armbian-build/delivery/*.txt \
+            armbian-build/delivery/build-inputs.sha256
+          gh release edit "$TAG" --draft=false --prerelease

@@ -1,0 +1,10 @@
+[Unit]
+Description=H728 SD boot-ID diagnostics and regulator evidence
+After=local-fs.target systemd-udev-trigger.service
+RequiresMountsFor=/boot
+ConditionPathIsMountPoint=/boot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/h728-diagnostics
+TimeoutStartSec=90
