@@ -6,10 +6,15 @@
 
 ## 当前状态
 
+最新镜像已发布：[v3.1.1-ci.6.1](https://github.com/jianjunx/armbian_x96q-pro-plus/releases/tag/v3.1.1-ci.6.1)。
+Actions [34678002094](https://github.com/jianjunx/armbian_x96q-pro-plus/actions/runs/34678002094)
+从 `c0c117f` 构建、离线校验并上传全部 8 个文件成功。下载文件名含
+`v3.1.1_SD.img.xz`；使用同一 Release 的 SHA256SUMS。新镜像需烧录复测。
+
 2026-09-12：构建目标更新为 v3.1.1，固化 Wi-Fi SDIO 24 MHz 上限（实际约
 22.22 MHz），内核包修订 +h728.5，保留 20 MHz 回退 DTB。现有系统已通过
 三次冷启动和双向各 5 分钟传输（下载 64.3 / 上传 66.0 Mbit/s）；新镜像
-需另行实测。下方 v3.1 下载链接与哈希仍指向旧版，构建结果另行发布。
+需另行实测。下方 v3.1 下载链接与哈希仍指向保留的旧版。
 
 2026-09-10：新完整 SD 镜像开发转入 [revision-v3.1](revision-v3.1/README.md)。
 默认运行 SD 根系统，保留盒子现有 eMMC，不自动迁移。v3 修正后已验证

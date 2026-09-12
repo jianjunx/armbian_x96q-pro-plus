@@ -2,6 +2,11 @@
 
 ## v3.1.1 Wi-Fi clock fix (2026-09-12)
 
+Published prerelease v3.1.1-ci.6.1, Actions run 34678002094, source c0c117f.
+All eight release assets uploaded after offline verification succeeded.
+Compressed SHA-256: ea037662d5c400d57a8c789871f88e9b11e65a86830c78453ca92e6d097d321c.
+Raw image SHA-256: 7be16b2016e711a4b47c6617c23f0e01bb43e98ee7b58e6473390607a8d290d7.
+
 Reuses the existing pinned CI inputs, with no new upstream binary downloads.
 Kernel package revision +h728.5 updates the postinst DTB payload only;
 Image/modules remain the matched reference 7.2.0-7 pair. The main DTB hash is
