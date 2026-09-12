@@ -26,6 +26,11 @@ if chroot "$root" /usr/local/sbin/h728-install-emmc --install; then exit 1; fi
 if grep -q '\$report' "$root/usr/local/lib/h728-diagnostics-base"; then exit 1; fi
 chroot "$root" bash -n /usr/local/lib/h728-diagnostics-base
 test -s "$root/etc/h728-image-release"
+grep -qx VERSION=v3.1.1 "$root/etc/h728-image-release"
+test "$(fdtget "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb" /soc/mmc@4021000 max-frequency)" = 24000000
+cp "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb" "$root/tmp/wifi20.dtb"
+fdtput -t i "$root/tmp/wifi20.dtb" /soc/mmc@4021000 max-frequency 20000000
+cmp "$root/tmp/wifi20.dtb" "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+-wifi20.dtb"
 test "$(readlink "$root/etc/systemd/system/exim4.service")" = /dev/null
 chroot "$root" systemd-analyze verify /etc/systemd/system/h728-diagnostics.service
 chroot "$root" sh -c 'command -v timeout; command -v flock; command -v dtc'

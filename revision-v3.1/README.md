@@ -1,5 +1,27 @@
 # v3.1 full SD image
 
+## Current build target: v3.1.1
+
+The scripts in this directory now produce
+`Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1.1_SD.img`, in a separate
+`/armbian/cache/h728-v3.1.1` workspace. Kernel package +h728.5 carries the
+Wi-Fi 24 MHz ceiling in its postinst DTB payload; Image/modules are unchanged.
+The actual observed clock is 22.22 MHz. The user confirmed three cold boots,
+5 GHz association, DHCP and 300-second transfers in both directions:
+64.3 Mbit/s download, 66.0 Mbit/s upload with zero upload TCP retransmissions.
+These tests were on the patched existing system, not the new CI image.
+20 MHz fallback DTB is included alongside the untouched stock DTB. See
+H728-README.txt for selecting it. No private Wi-Fi credentials or device MAC
+are embedded. Detailed experiment history: [WIFI-TEST.md](WIFI-TEST.md).
+The delivery filenames and hashes below refer to the preserved v3.1 release.
+
+2026-09-10 hardware update: the user booted the CI SD image and accessed wired
+SSH. Wi-Fi enumerates on SDIO but fails during firmware transfer with -110;
+it is not working. See [Wi-Fi investigation and reversible test](WIFI-TEST.md).
+The 12 MHz experiment is not included in the default image and is not yet
+hardware-validated. Earlier "not hardware-tested" statements below describe
+the state at image delivery, not the latest feedback.
+
 Scope agreed 2026-09-10: a fresh standalone SD system; preserve the box eMMC.
 This is NOT a copy of the user's running eMMC, nor an eMMC bootloader fix.
 The version remains Debian 13 Trixie / reference Linux 7.2.0-7-MANJARO-ARM.

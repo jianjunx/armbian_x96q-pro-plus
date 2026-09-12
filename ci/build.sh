@@ -16,10 +16,10 @@ shellcheck -x -P "$src" "$src/"*.sh "$src/h728-diagnostics" "$src/h728-install-e
 bash "$src/build.sh" 2>&1 | tee /armbian/delivery/build.txt
 bash "$src/verify.sh" 2>&1 | tee /armbian/delivery/verification.txt
 # Move the verified image, avoiding a third 4 GiB copy on the hosted runner.
-image=Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1_SD.img
+image=Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1.1_SD.img
 test ! -e "/armbian/delivery/$image"
-mv /armbian/cache/h728-v3.1/v3.1-working.img "/armbian/delivery/$image"
-cp /armbian/cache/h728-v3.1/installed-packages.txt /armbian/delivery/packages.txt
+mv /armbian/cache/h728-v3.1.1/v3.1.1-working.img "/armbian/delivery/$image"
+cp /armbian/cache/h728-v3.1.1/installed-packages.txt /armbian/delivery/packages.txt
 cp /src/ci/inputs.sha256 /armbian/delivery/build-inputs.sha256
 cp /src/revision-v3.1/H728-README.txt /armbian/delivery/H728-README.txt
 cd /armbian/delivery

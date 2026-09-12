@@ -1,5 +1,16 @@
 # X96Q Pro+ / Allwinner H728 Armbian materials
 
+## v3.1.1 Wi-Fi clock fix (2026-09-12)
+
+Reuses the existing pinned CI inputs, with no new upstream binary downloads.
+Kernel package revision +h728.5 updates the postinst DTB payload only;
+Image/modules remain the matched reference 7.2.0-7 pair. The main DTB hash is
+`5e4c838516b43e7667a583859b671cf5eb00316674eb950d0eb5bb67b2502bc7`.
+Wi-Fi max-frequency is 24 MHz (observed 22.22 MHz); a separate 20 MHz fallback
+is included. Three cold boots and sustained TCP tests passed on the user's
+patched system; the new image requires hardware retesting. Prior artifacts
+are preserved. No private diagnostic logs, Wi-Fi credentials or MACs included.
+
 Downloaded on 2026-08-28 for building an experimental Armbian image for the
 X96Q Pro+ (Allwinner H728).
 

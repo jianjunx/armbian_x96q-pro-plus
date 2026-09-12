@@ -1,4 +1,4 @@
-X96Q Pro+ H728 v3.1 - FULL SD SYSTEM
+X96Q Pro+ H728 v3.1.1 - FULL SD SYSTEM
 Debian 13 Trixie / reference Linux 7.2.0-7-MANJARO-ARM
 
 Flash the entire image to SD with write verification. This image defaults to
@@ -8,6 +8,16 @@ Boot with Ethernet attached. SSH: root / 1234, then finish first-login setup.
 Credentials and files from your existing eMMC are NOT copied into this image.
 
 Corrected eMMC DTB supply; paired Image/modules/DTB; AIC8800D80 firmware;
+kernel package +h728.5 includes Wi-Fi SDIO max-frequency=24000000.
+Observed actual clock is 22222222 Hz. On the user's box this configuration
+passed three cold boots and 5 minutes per TCP direction (64.3/66.0 Mbit/s).
+This newly assembled image still requires hardware retesting.
+Wi-Fi credentials are not included. Configure wlan0 with Netplan/networkd;
+NetworkManager/nmcli is not installed. Do not publish Wi-Fi passwords or use
+one shared fixed MAC address across multiple devices.
+Wi-Fi recovery: use dtb/allwinner/sun55i-h728-x96qpro+-wifi20.dtb (20 MHz)
+in BOTH armbianEnv.txt fdtfile and the active extlinux.conf FDT entry, then
+cold boot. Keep root UUIDs unchanged. Restore the normal DTB path to undo.
 schedutil with 408 MHz minimum. loglevel=7 aids diagnostics, not a proven fix.
 Wi-Fi association, USB device transfers, temperature and repeated cold boots
 must be retested. HDMI and deep CPU idle are not fixed. Kernel is a repackaged

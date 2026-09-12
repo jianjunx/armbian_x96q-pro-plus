@@ -24,6 +24,12 @@ else
     expected=$root/tmp/expected.dtb
     cp "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb" "$expected"
     bash "$src/patch-emmc-dtb.sh" "$expected"
+    if [[ ${H728_WIFI_MAX_FREQUENCY:-} == 24000000 ]]; then
+        bash "$src/patch-wifi-dtb.sh" "$expected"
+    elif [[ -n ${H728_WIFI_MAX_FREQUENCY:-} ]]; then
+        echo 'Unsupported Wi-Fi clock verification override' >&2
+        exit 1
+    fi
     cmp "$dtb" "$expected"
     cmp "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+-stock.dtb" "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb"
     for node in /soc/ethernet@4510000 /soc/usb@4d00000 /soc/phy@4f00000 /soc/mmc@4020000 /soc/mmc@4021000 /soc/mmc@4022000; do

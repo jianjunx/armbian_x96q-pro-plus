@@ -5,7 +5,8 @@ physical SD/eMMC backup. No private diagnostics or keys belong in the bundle.
 The native `ubuntu-24.04-arm` runner executes loop/mount/chroot in a privileged
 Ubuntu container. No physical device is attached. It does not build Linux
 from source or update Trixie packages. CI host packages may update; image
-packages remain pinned to the original v3 base and the local +h728.4 repair.
+packages remain pinned to the original v3 base and the local +h728.5 DTB repair.
+Current output is v3.1.1 with Wi-Fi 24 MHz ceiling and a 20 MHz fallback DTB.
 
 ## One-time bootstrap
 
@@ -23,7 +24,7 @@ change or in another repository; do not repeat them for normal builds.
    This is an archival build input, not a recommended flashable release.
    Never replace it with a device backup or a different image under the same name.
 5. Push build-related code to main: the workflow builds and publishes under a
-   unique `v3.1.0-ci.<run>.<attempt>` tag. Alternatively push `v3.1.0`, or manually
+   unique `v3.1.1-ci.<run>.<attempt>` tag. Alternatively push a new v3.1 tag, or manually
    run workflow_dispatch on main or a v3.1 release tag. Documentation-only pushes
    outside the build directories do not trigger another image build.
 

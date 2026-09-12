@@ -16,11 +16,14 @@ printf '%s  %s\n' \
     0914b3859e86f91e8bdfc64d19b1f3ad3036c50521a0c00b2bce578982145b7c /armbian/cache/blobs/u-boot-sunxi-with-spl-x96qproplus-b99f4a9.bin | sha256sum -c -
 work=$(mktemp -d /tmp/h728-v3.1-build.XXXXXX)
 dpkg-deb -R "$oldpkg" "$work/kernel"
-sed -i 's/^Version: .*/Version: 7.2.0-7+h728.4/' "$work/kernel/DEBIAN/control"
+sed -i "s/^Version: .*/Version: $H728_KERNEL_PACKAGE_VERSION/" "$work/kernel/DEBIAN/control"
 payload=$work/kernel/usr/lib/linux-image-h728-manjaro
 cp "$ref/boot/dtbs/allwinner/sun55i-h728-x96qpro+.dtb" "$payload/sun55i-h728-x96qpro+.dtb"
 bash "$src/patch-emmc-dtb.sh" "$payload/sun55i-h728-x96qpro+.dtb"
 printf '%s  %s\n' be1028ce193f0948f0476c03851a6a6da82ce5b4cf40d83c1c472cc47b9b2567 "$payload/sun55i-h728-x96qpro+.dtb" | sha256sum -c -
+cp "$payload/sun55i-h728-x96qpro+.dtb" "$work/wifi20.dtb"
+fdtput -t i "$work/wifi20.dtb" /soc/mmc@4021000 max-frequency 20000000
+bash "$src/patch-wifi-dtb.sh" "$payload/sun55i-h728-x96qpro+.dtb"
 cmp "$payload/Image" "$ref/boot/Image"
 dpkg-deb --root-owner-group -Zxz --build "$work/kernel" "$package"
 cp --sparse=never "$base" "$image"
@@ -64,6 +67,7 @@ cp "$package" "$root/tmp/h728-v3.1-kernel.deb"
 chroot "$root" dpkg -i /tmp/h728-v3.1-kernel.deb
 chroot "$root" apt-mark hold linux-image-h728-manjaro
 chroot "$root" apt-get check
+install -m0644 "$work/wifi20.dtb" "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+-wifi20.dtb"
 sed -i -E 's/loglevel=[0-9]+/loglevel=7/g; s/Trixie v3$/Trixie v3.1/; s/eMMC enabled \(52 MHz SDR\)/SD system - corrected eMMC supply/' "$root/boot/extlinux/extlinux.conf"
 sed -i -E 's/^verbosity=.*/verbosity=7/; /^extraargs=/{s/ loglevel=[0-9]+//g; s/$/ loglevel=7/;}' "$root/boot/armbianEnv.txt"
 sed -i 's/setenv verbosity 6/setenv verbosity 7/; s/H728 v3/H728 v3.1/g' "$root/boot/boot.cmd"
@@ -82,7 +86,9 @@ if [[ -f $root/lib/systemd/system/exim4.service || -f $root/usr/lib/systemd/syst
     chroot "$root" systemctl mask exim4.service
 fi
 install -m0644 "$src/H728-README.txt" "$root/boot/H728-README.txt"
-printf 'VERSION=v3.1\nMODE=standalone-sd\nEMMC_INSTALL=disabled\n' >"$root/etc/h728-image-release"
+sed -i 's/v3\.1/v3.1.1/g' "$root/boot/extlinux/extlinux.conf" "$root/boot/boot.cmd"
+mkimage -A arm64 -T script -C none -n 'H728 Trixie v3.1.1 SD' -d "$root/boot/boot.cmd" "$root/boot/boot.scr"
+printf 'VERSION=v3.1.1\nMODE=standalone-sd\nEMMC_INSTALL=disabled\nWIFI_SDIO_MAX_HZ=24000000\n' >"$root/etc/h728-image-release"
 chroot "$root" dpkg-query -W >"$cache/installed-packages.txt"
 chroot "$root" dpkg --audit
 # Preserve first-login provisioning and remove only identities in the new image.

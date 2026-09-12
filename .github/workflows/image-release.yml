@@ -1,4 +1,4 @@
-name: Build and release v3.1 SD image
+name: Build and release v3.1.1 SD image
 on:
   push:
     branches: [main]
@@ -76,7 +76,7 @@ jobs:
           if [[ "$REF_TYPE" = tag ]]; then
             tag_args=(--verify-tag)
           else
-            TAG="v3.1.0-ci.${RUN_NUMBER}.${RUN_ATTEMPT}"
+            TAG="v3.1.1-ci.${RUN_NUMBER}.${RUN_ATTEMPT}"
             tag_args=(--target "$COMMIT")
           fi
           cp ci/release-notes.md armbian-build/delivery/release-notes.md
