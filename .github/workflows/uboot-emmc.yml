@@ -41,7 +41,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             bc bison flex build-essential crossbuild-essential-arm64 \
             ca-certificates curl device-tree-compiler git make patch perl \
-            libssl-dev python3 python3-dev python3-setuptools swig
+            libssl-dev libgnutls28-dev uuid-dev \
+            python3 python3-dev python3-setuptools python3-yaml \
+            python3-jsonschema python3-pyelftools swig
 
       - name: Download pinned upstream sources
         env:
@@ -68,17 +70,23 @@ jobs:
             echo '::warning::ci/uboot-emmc.sha256 is absent, so the source archives are not hash-pinned. Copy out/source.sha256 into ci/uboot-emmc.sha256 to pin them.'
           fi
 
-      - name: Build BL31 and the eMMC U-Boot blob
+      - name: Build BL31
         env:
-          UBOOT_COMMIT: b99f4a9e0778f4f402619d70976537d4833d7eab
           ATF_COMMIT: b5de74a685fb73b784e45bbbd18dd9a0c528d8b2
         run: |
           set -euo pipefail
-          uboot="$PWD/src/u-boot-${UBOOT_COMMIT}"
           atf="$PWD/src/arm-trusted-firmware-${ATF_COMMIT}"
-          jobs=$(nproc)
-          make -C "$atf" -j"$jobs" CROSS_COMPILE=aarch64-linux-gnu- PLAT=sun55i_a523 bl31
-          cp "$atf/build/sun55i_a523/release/bl31.bin" "$uboot/bl31.bin"
+          make -C "$atf" -j"$(nproc)" CROSS_COMPILE=aarch64-linux-gnu- PLAT=sun55i_a523 bl31
+          test -f "$atf/build/sun55i_a523/release/bl31.bin"
+          cp "$atf/build/sun55i_a523/release/bl31.bin" "$PWD/bl31.bin"
+
+      - name: Build the eMMC U-Boot blob
+        env:
+          UBOOT_COMMIT: b99f4a9e0778f4f402619d70976537d4833d7eab
+        run: |
+          set -euo pipefail
+          uboot="$PWD/src/u-boot-${UBOOT_COMMIT}"
+          cp "$PWD/bl31.bin" "$uboot/bl31.bin"
           make -C "$uboot" CROSS_COMPILE=aarch64-linux-gnu- x96q_pro_plus_defconfig
           cd "$uboot"
           patch -p1 < "$GITHUB_WORKSPACE/revision-v3/uboot-emmc.patch"
@@ -86,7 +94,7 @@ jobs:
           scripts/config --set-str IDENT_STRING ' H728 eMMC v3'
           scripts/config --enable OF_LIBFDT_OVERLAY
           make CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
-          make -j"$jobs" CROSS_COMPILE=aarch64-linux-gnu- EXTRAVERSION=-h728-emmc-v3
+          make -j"$(nproc)" CROSS_COMPILE=aarch64-linux-gnu- EXTRAVERSION=-h728-emmc-v3
           test "$(grep '^CONFIG_MMC_SUNXI_SLOT_EXTRA=' .config)" = CONFIG_MMC_SUNXI_SLOT_EXTRA=2
           echo "UBOOT_DIR=$uboot" >>"$GITHUB_ENV"
 
