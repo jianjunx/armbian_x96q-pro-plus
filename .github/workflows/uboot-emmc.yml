@@ -100,24 +100,45 @@ jobs:
 
       - name: Assert the U-Boot eMMC node and blob signature
         run: |
-          set -euo pipefail
+          set -uo pipefail
           dtb="$UBOOT_DIR/arch/arm/dts/sun55i-h728-x96qpro+.dtb"
-          test -f "$dtb"
+          blob=out/u-boot-sunxi-with-spl-emmc.bin
+          cp "$UBOOT_DIR/u-boot-sunxi-with-spl.bin" "$blob"
+          cp "$UBOOT_DIR/.config" out/emmc-uboot.config
+          fail=0
+          check() {  # name actual expected
+            if [[ "$2" = "$3" ]]; then
+              echo "OK   $1 = $2"
+            else
+              echo "FAIL $1 = '$2' (expected '$3')"
+              fail=1
+            fi
+          }
+          check "board dtb present" "$(test -f "$dtb" && echo yes || echo no)" yes
           # The sunxi U-Boot driver lacks A523 timing calibration on this board.
           # 1-bit/26 MHz is the only mode proven to work in BROM and U-Boot proper.
-          test "$(fdtget "$dtb" /soc/mmc@4022000 status)" = okay
-          test "$(fdtget "$dtb" /soc/mmc@4022000 bus-width)" -eq 1
-          test "$(fdtget "$dtb" /soc/mmc@4022000 max-frequency)" -eq 26000000
-          cp "$UBOOT_DIR/u-boot-sunxi-with-spl.bin" out/u-boot-sunxi-with-spl-emmc.bin
-          cp "$UBOOT_DIR/.config" out/emmc-uboot.config
-          # The BROM looks for the eGON.BT0 SPL header at byte offset 8192.
-          dd if=out/u-boot-sunxi-with-spl-emmc.bin bs=1024 skip=8 count=1 status=none \
-            | grep -q 'eGON.BT0'
-          size=$(stat -c%s out/u-boot-sunxi-with-spl-emmc.bin)
-          test "$size" -gt 262144 -a "$size" -lt 2097152
-          cd out
-          sha256sum u-boot-sunxi-with-spl-emmc.bin >emmc-uboot.sha256
-          cat emmc-uboot.sha256
+          check "mmc2 status" "$(fdtget "$dtb" /soc/mmc@4022000 status 2>&1)" okay
+          check "mmc2 bus-width" "$(fdtget "$dtb" /soc/mmc@4022000 bus-width 2>&1)" 1
+          check "mmc2 max-frequency" \
+            "$(fdtget "$dtb" /soc/mmc@4022000 max-frequency 2>&1)" 26000000
+          # The eGON.BT0 magic sits at byte 4 of the blob (byte 0 is the jump
+          # instruction). 8 KiB is where it lands on the *device*, because it is
+          # written with "dd seek=8", not an offset inside this file.
+          check "SPL magic at file offset 4" \
+            "$(dd if="$blob" bs=1 skip=4 count=8 status=none)" "eGON.BT0"
+          size=$(stat -c%s "$blob")
+          if [[ $size -gt 262144 && $size -lt 2097152 ]]; then
+            echo "OK   blob size = $size bytes"
+          else
+            echo "FAIL blob size = $size bytes (expected 256 KiB..2 MiB)"
+            fail=1
+          fi
+          if [[ $fail -ne 0 ]]; then
+            echo "::error::eMMC bootloader assertions failed; not publishing the blob."
+          fi
+          (cd out && sha256sum u-boot-sunxi-with-spl-emmc.bin >emmc-uboot.sha256)
+          cat out/emmc-uboot.sha256
+          exit $fail
 
       - uses: actions/upload-artifact@v4
         with:
