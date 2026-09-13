@@ -1,12 +1,19 @@
 --- a/arch/arm/dts/sun55i-h728-x96qpro+.dts
 +++ b/arch/arm/dts/sun55i-h728-x96qpro+.dts
-@@ -65,8 +65,7 @@
- 
+@@ -58,14 +58,13 @@
+ &mmc2 {
+ 	vmmc-supply = <&reg_cldo3>;
+ 	vqmmc-supply = <&reg_cldo1>;
+-	bus-width = <8>;
++	bus-width = <1>;
  	non-removable;
  	cap-mmc-hw-reset;
 -	mmc-ddr-1_8v;
 -	mmc-hs200-1_8v;
-+	max-frequency = <52000000>;
++	max-frequency = <26000000>;
  	status = "okay";
  };
  
+ &ohci0 {
+ 	status = "okay";
+ };

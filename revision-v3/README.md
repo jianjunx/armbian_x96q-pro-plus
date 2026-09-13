@@ -190,3 +190,54 @@ H728_DTB_ROLLBACK=1 bash /armbian/cache/h728-v3-input/verify.sh
 
 - 若 DHCP 立即拿到地址、有线 `end0` 拿到 carrier —— 回归点在 `patch-emmc-dtb.sh` 引入的 eMMC 节点，需要排查它对 GMAC1 PHY 供电或 regulator 共享的影响。
 - 若仍无 carrier —— 回归点在 7.2 参考 DTB 本身的 GMAC1/PHY 配置，需要在 `manjaro-linux-a523`/`armbian-patches/` 里继续对照 6.17-2 参考 DTB 的 PHY 供电、复位与 RGMII 延迟。
+
+## eMMC 独立启动失败：根因与修复（2026-09-13 串口定位）
+
+接上 USB-TTL 串口（COM3，115200 8N1）后，拔 SD 卡冷启动 eMMC 的完整输出只有 7 行：
+
+```
+U-Boot SPL 2025.01-h728-emmc-v3 (Sep 09 2026 - 02:34:51 +0000)
+DRAM: 4096 MiB
+Trying to boot from MMC2
+mmc_load_image_raw_sector: mmc block read error
+Error: -38
+SPL: failed to boot from all boot devices
+### ERROR ### Please RESET the board ###
+```
+
+这把故障域直接切成两段：
+
+| 加载阶段 | 结果 |
+|---|---|
+| BROM 从 eMMC 用户区 8 KiB 加载 SPL | **成功**（EXT_CSD=0x00 也照读，H728 BROM 不看 PARTITION_CONFIG） |
+| SPL 的 sunxi_mmc 驱动从 SMHC2 读 U-Boot proper | **失败**（`mmc block read error` / `-ENOSYS`） |
+
+同时从 SD 启动打断 autoboot 进 U-Boot CLI 验证过：**同一个 SMHC2 控制器，U-Boot proper 读 eMMC 完全正常**（`mmc read`/`fatls`/`fatload` 全过），协商结果是 **26 MHz / 1-bit**，`gpio status -a` 确认 PC0-16 全部正确复用为 mmc2 功能，MMC2 模块时钟 25 MHz。
+
+### 根因：我们的"保守"补丁把 SPL 钉死在坏模式上
+
+- SD blob（未打补丁的 U-Boot dts：含 `mmc-hs200-1_8v` + `mmc-ddr-1_8v`）的 U-Boot proper：模式协商逐级回退 HS200 → `-ENOSYS` → DDR → 失败 → … → **落到 26 MHz / 1-bit，恰好可用**。
+- eMMC blob（打了首版 `uboot-emmc.patch`：删掉 hs200/ddr、限 52 MHz）的 SPL：没有回退触发条件，**直接进入 52 MHz / 8-bit SDR**——而这个模式在 U-Boot 的 sunxi 驱动下不工作（A523 需要新时序校准，U-Boot 驱动没有；Linux 内核有，所以内核 DDR52 正常）。
+
+也就是说：**U-Boot（SPL 和 proper）在这块板子上唯一被证明可用的 eMMC 模式是 1-bit / 26 MHz**——BROM 用它，U-Boot proper 回退后也是它。
+
+### 修复（2026-09-13，`uboot-emmc.patch` v2）
+
+```diff
+ &mmc2 {
+ 	vmmc-supply = <&reg_cldo3>;
+ 	vqmmc-supply = <&reg_cldo1>;
+-	bus-width = <8>;
++	bus-width = <1>;
+ 	non-removable;
+ 	cap-mmc-hw-reset;
+-	mmc-ddr-1_8v;
+-	mmc-hs200-1_8v;
++	max-frequency = <26000000>;
+ 	status = "okay";
+ };
+```
+
+已用 `git apply` 对上游 dts 干跑验证通过。**此补丁只影响 U-Boot 自身（SPL + proper），不影响 Linux 侧 DTB**（Linux 的 eMMC 仍是 8-bit DDR52，由 `patch-emmc-dtb.sh` 独立维护）。
+
+待办：重编 eMMC blob（`build-emmc-uboot.sh`），写入 eMMC 用户区 8 KiB，拔卡冷启动验证。写入可以不依赖 Linux root：U-Boot CLI 里 `loady`（YMODEM 串口传输）+ `mmc write` 即可完成。若独立启动成功，再评估能否放宽到 4-bit / 52 MHz 以加快内核加载（当前 1-bit/26 MHz 加载 ~53 MiB 内核+initrd 约需 16 秒）。
