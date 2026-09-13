@@ -8,5 +8,8 @@ reference-packages/
 build-artifacts/
 manjaro-linux-a523.tar.gz
 
+# Output of the local Podman U-Boot build (ci/podman-build-uboot-emmc.sh).
+out/
+
 # The Armbian framework is a separate Git checkout with its own history.
 armbian-build/

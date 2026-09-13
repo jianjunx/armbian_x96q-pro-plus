@@ -1,0 +1,90 @@
+--- a/drivers/mmc/sunxi_mmc.c
++++ b/drivers/mmc/sunxi_mmc.c
+@@ -233,6 +233,7 @@
+ {
+ 	debug("set ios: bus_width: %x, clock: %d\n",
+ 	      mmc->bus_width, mmc->clock);
++	printf("H728DBG ios bw=%d clk=%d\n", mmc->bus_width, mmc->clock);
+ 
+ 	/* Change clock first */
+ 	if (mmc->clock && mmc_config_clock(priv, mmc) != 0) {
+@@ -266,6 +267,7 @@
+ 
+ 	if (timeout_msecs < 2000)
+ 		timeout_msecs = 2000;
++	printf("H728DBG pio words=%u tmo=%u\n", word_cnt, timeout_msecs);
+ 
+ 	/* Always read / write data through the CPU */
+ 	setbits_le32(&priv->reg->gctrl, SUNXI_MMC_GCTRL_ACCESS_BY_AHB);
+@@ -276,8 +278,11 @@
+ 		unsigned int in_fifo;
+ 
+ 		while ((status = readl(&priv->reg->status)) & status_bit) {
+-			if (get_timer(start) > timeout_msecs)
++			if (get_timer(start) > timeout_msecs) {
++				printf("H728DBG pio TMO word %u/%u st=%x\n", i, word_cnt,
++				       status);
+ 				return -1;
++			}
+ 		}
+ 
+ 		/*
+@@ -372,6 +377,9 @@
+ 		writel(data->blocksize, &priv->reg->blksz);
+ 		writel(data->blocks * data->blocksize, &priv->reg->bytecnt);
+ 	}
++	printf("H728DBG cmd=%d blks=%d bs=%d bc=%u\n", cmd->cmdidx,
++	       data ? data->blocks : 0, data ? data->blocksize : 0,
++	       data ? (unsigned)(data->blocks * data->blocksize) : 0);
+ 
+ 	debug("mmc %d, cmd %d(0x%08x), arg 0x%08x\n", priv->mmc_no,
+ 	      cmd->cmdidx, cmdval | cmd->cmdidx, cmd->cmdarg);
+@@ -393,6 +401,8 @@
+ 		writel(cmdval | cmd->cmdidx, &priv->reg->cmd);
+ 		ret = mmc_trans_data_by_cpu(priv, mmc, data);
+ 		if (ret) {
++			printf("H728DBG pio fail ret=%d rint=%x\n", ret,
++			       readl(&priv->reg->rint));
+ 			error = readl(&priv->reg->rint) &
+ 				SUNXI_MMC_RINT_INTERRUPT_ERROR_BIT;
+ 			error = -ETIMEDOUT;
+@@ -413,8 +423,11 @@
+ 				      SUNXI_MMC_RINT_AUTO_COMMAND_DONE :
+ 				      SUNXI_MMC_RINT_DATA_OVER,
+ 				      "data");
+-		if (error)
++		if (error) {
++			printf("H728DBG datawait err=%d rint=%x\n", error,
++			       readl(&priv->reg->rint));
+ 			goto out;
++		}
+ 	}
+ 
+ 	if (cmd->resp_type & MMC_RSP_BUSY) {
+--- a/drivers/mmc/mmc.c
++++ b/drivers/mmc/mmc.c
+@@ -553,6 +553,9 @@
+ 		if (mmc_read_blocks(mmc, dst, start, cur) != cur) {
+ 			lbaint_t i;
+ 
++			printf("H728DBG bread fail start=%lu cur=%lu\n",
++			       (unsigned long)start, (unsigned long)cur);
++
+ 			pr_debug("%s: Failed to read blocks\n", __func__);
+ 			/*
+ 			 * H728 / A523: the sunxi host has no new-timing calibration,
+@@ -565,9 +568,13 @@
+ 			for (i = 0; i < cur; i++) {
+ 				if (mmc_read_blocks(mmc, (char *)dst +
+ 						    i * mmc->read_bl_len,
+-						    start + i, 1) != 1)
++						    start + i, 1) != 1) {
++					printf("H728DBG single fail at %lu\n",
++					       (unsigned long)(start + i));
+ 					return 0;
++				}
+ 			}
++			printf("H728DBG bread recovered\n");
+ 		}
+ 		blocks_todo -= cur;
+ 		start += cur;

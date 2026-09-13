@@ -93,9 +93,16 @@ jobs:
           scripts/config --set-val MMC_SUNXI_SLOT_EXTRA 2
           scripts/config --set-str IDENT_STRING ' H728 eMMC v3'
           scripts/config --enable OF_LIBFDT_OVERLAY
+          # H728 / A523: cap CONFIG_SYS_MMC_MAX_BLK_COUNT at 1 for this blob.
+          # Multi-block reads to the eMMC fail intermittently (a CMD18 never
+          # raises command-done), while single-block reads never failed once.
+          # mmc_bread() splits a request on b_max, so this keeps every request
+          # on the path that works. U-Boot proper pays for it only in speed.
+          scripts/config --set-val CONFIG_SYS_MMC_MAX_BLK_COUNT 1
           make CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
           make -j"$(nproc)" CROSS_COMPILE=aarch64-linux-gnu- EXTRAVERSION=-h728-emmc-v3
           test "$(grep '^CONFIG_MMC_SUNXI_SLOT_EXTRA=' .config)" = CONFIG_MMC_SUNXI_SLOT_EXTRA=2
+          test "$(grep '^CONFIG_SYS_MMC_MAX_BLK_COUNT=' .config)" = CONFIG_SYS_MMC_MAX_BLK_COUNT=1
           echo "UBOOT_DIR=$uboot" >>"$GITHUB_ENV"
 
       - name: Assert the U-Boot eMMC node and blob signature

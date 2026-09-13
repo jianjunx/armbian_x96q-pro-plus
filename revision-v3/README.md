@@ -240,4 +240,98 @@ SPL: failed to boot from all boot devices
 
 已用 `git apply` 对上游 dts 干跑验证通过。**此补丁只影响 U-Boot 自身（SPL + proper），不影响 Linux 侧 DTB**（Linux 的 eMMC 仍是 8-bit DDR52，由 `patch-emmc-dtb.sh` 独立维护）。
 
-待办：重编 eMMC blob（`build-emmc-uboot.sh`），写入 eMMC 用户区 8 KiB，拔卡冷启动验证。写入可以不依赖 Linux root：U-Boot CLI 里 `loady`（YMODEM 串口传输）+ `mmc write` 即可完成。若独立启动成功，再评估能否放宽到 4-bit / 52 MHz 以加快内核加载（当前 1-bit/26 MHz 加载 ~53 MiB 内核+initrd 约需 16 秒）。
+### v2 无效：SPL 根本不解析设备树
+
+按上面重编出的 v2 blob 刷入后（时间戳 `Sep 13 2026 - 05:29:59`），串口输出**一字未变**。
+查编译产物 `out/emmc-uboot.config` 发现 `CONFIG_SPL_OF_CONTROL` 与 `CONFIG_SPL_DM`
+**均未开启** —— SPL 是纯 legacy 构建，压根不读设备树，所以改 `bus-width` /
+`max-frequency` 对它是空操作。SPL 走的是 `drivers/mmc/sunxi_mmc.c` 里
+`#if !CONFIG_IS_ENABLED(DM_MMC)` 的 legacy 分支 `sunxi_mmc_init()`，其中对 A523 的
+`sdc_no == 2` **硬编码**：
+
+```c
+cfg->host_caps = MMC_MODE_8BIT | MMC_MODE_HS_52MHz | MMC_MODE_HS;
+cfg->f_max = 52000000;
+```
+
+正是 U-Boot proper 回退链里唯一会失败的那一级。
+（扇区布局同时被排除：`spl_mmc.c` 算出 `0x40 + DATA_PART_OFFSET 0x10 = 0x50`，
+正是安装器写入的位置。）
+
+### v3 也无效：SPL 的多块读会卡死
+
+v3 在设备树 hunk 之外另加一段，把上面那段硬编码降到 1-bit / 26 MHz
+（时间戳 `Sep 13 2026 - 05:52:40`），**依然一字未变**。改用插桩拿到运行时真相：
+SPL 的日志要开 **`CONFIG_SPL_LOG`**（只开 `CONFIG_LOG` 是哑的），开满后串口给出
+
+```
+H728DBG ios bw=1 clk=26000000            <- 时序修复确实生效
+size=200 ... x3                          <- 三次 512 字节单块读全部成功
+size=ba200                               <- 一次 1490 块 CMD18
+mmc_load_image_raw_sector: mmc block read error
+(error=-5)                               <- -EIO，卡在 CMD18 内部、CMD12 之前
+```
+
+### 第三个故障：启动目标里没有 eMMC
+
+读 SD 卡上那个能用的 U-Boot 的 `printenv`，得到 `boot_targets=fel mmc0 usb0 pxe dhcp`
+——**没有 mmc1**。原因在 `include/configs/sunxi-common.h`：
+`BOOT_TARGET_DEVICES_MMC` 在 `CONFIG_MMC_SUNXI_SLOT_EXTRA != -1` 时展开为
+`mmc_auto`，否则是死值 `mmc0`。`mmc_auto` 会按 `mmc_bootdev` 先跑 `bootcmd_mmc1`，
+而 `board/sunxi/board.c` 从 `sunxi_get_boot_device()`（MMC2 → 1）赋 `mmc_bootdev=1`。
+也就是说：**只要 SPL 能读出 proper，后面这条链是通的**；反过来说，任何没开
+`SLOT_EXTRA` 的 U-Boot 就算从 eMMC 起来了也只会去找不存在的 mmc0。
+
+### 最终修复（v4）
+
+1. legacy 分支里把 A523 slot 2 的 `host_caps` 清掉 8BIT/4BIT/HS_52MHz，`f_max` 降到
+   26 MHz（设备树那一份留给 U-Boot proper，两边都要改）。
+2. legacy 分支里设 `cfg->b_max = 1`，让 SPL 全程单块读。多块读是**间歇性**失败
+   （U-Boot CLI 读 1490 块成功，但 FAT 连续 cluster 读 8 块时一块失败一块成功），
+   而单块读在 SPL 和 U-Boot proper 里**从未失败过一次**。只改 legacy 分支，
+   U-Boot proper 的 DM 分支不受影响；全局改 `CONFIG_SYS_MMC_MAX_BLK_COUNT` 会让每次
+   失败都付约 3 秒超时代价。
+3. `mmc_bread()` 加兜底：多块读短读时逐块重试，stall 降级而不是判死。
+4. `CONFIG_MMC_SUNXI_SLOT_EXTRA=2` 保持开启（第二个关键作用：让启动目标变成
+   `mmc_auto`）。
+
+补丁用 `revision-v3/gen-patches.py` 从 pinned 上游源码以 `difflib` 生成，不要手写
+hunk —— 手写版本曾通过 `git apply` 却被容器里的 GNU `patch` 拒绝（空上下文行被剥成
+空行）。构建走 `ci/podman-build-uboot-emmc.sh`（Podman + `ubuntu:24.04`，约 3 分钟），
+`H728_UBOOT_DEBUG=1` 会额外打开 `CONFIG_SPL_LOG` 并打上插桩补丁。
+
+## eMMC 独立启动已打通（2026-09-13 真机验证）
+
+把 v4 blob（773113 B，sha `17f0895b…`）刷入 eMMC 用户区 8 KiB、**拔掉 SD 卡**冷启动，
+串口完整链路：
+
+```
+U-Boot SPL 2025.01-h728-emmc-v3 (Sep 13 2026 - 07:09:12 +0000)
+U-Boot 2025.01-h728-emmc-v3 ... H728 eMMC v3
+Scanning mmc 1:1... -> Found /extlinux/extlinux.conf
+Retrieving file: /Image -> /initrd.img-7.2.0-7-MANJARO-ARM -> /dtb/.../sun55i-h728-x96qpro+.dtb
+Starting kernel ...
+EXT4-fs (mmcblk2p2): mounted filesystem dd11ca3d-... 
+dwmac-sun55i ... end0: Link is Up - 1Gbps/Full - flow control rx/tx
+Welcome to Armbian-unofficial H728 v3 / Debian GNU/Linux 13 (trixie)!
+x96q-pro-plus login:
+```
+
+启动后 SSH 登录确认（`10.0.0.163`）：
+
+| 项目 | 实测 |
+|---|---|
+| 根文件系统 | `/dev/mmcblk2p2` ext4（eMMC），`/boot` 为 `mmcblk2p1` vfat `H728_BOOT` |
+| eMMC 容量 | 58.2 GiB（CJNB4R），`mmcblk2boot0/1` 各 4 MiB |
+| 有线 `end0` | 1 Gbps / Full，carrier=1，DHCP 拿到地址 |
+| 启动耗时 | 约 32 秒到 login |
+| 失败单元 | 仅 `exim4.service`（邮件服务，与本改动无关） |
+
+**副作用**：这个 blob 编译进去的 `ethaddr` 与 SD 卡上那个 U-Boot 不同，MAC 为
+`02:00:fb:5b:fb:44`，因此 DHCP 分到的 IP 从 SD 启动时的 `10.0.0.164` 变成
+`10.0.0.163`。功能不受影响，但按 IP 记忆的登录方式要相应更新；如需固定，可在
+U-Boot env 里写死 `ethaddr` 或在路由器上做静态绑定。
+
+**遗留**：eMMC 多块读仍是间歇性失败，目前靠 `b_max = 1` 全程单块读规避，加载
+~53 MiB 内核 + initrd 明显偏慢。要提速需要真正的时序修复（A523 新时序校准），
+不是把 `b_max` 调大。

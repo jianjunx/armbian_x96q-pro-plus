@@ -82,10 +82,37 @@ verifies before building and warns while the file is absent.
 
 The blob is verified, not merely produced: the compiled board DTB must carry
 `bus-width = <1>` and `max-frequency = <26000000>` on `/soc/mmc@4022000`, and
-the blob must contain `eGON.BT0` at byte offset 8192.
+the blob must contain `eGON.BT0` at **byte offset 4** of the file (byte 0 is the
+branch instruction). 8192 is where it lands *on the device*, because the blob is
+written with `dd seek=8`; it is not an offset inside the file.
 
 Installing a blob is a separate manual step: copy it to the SD card's FAT
 partition, boot from SD, interrupt autoboot, and write it to the eMMC user area
 at sector 16. The eMMC partition table starts at 1 MiB, so this replaces only
 the bootloader area. The SD card keeps its own bootloader and stays bootable
 regardless of the outcome.
+
+## Building the blob locally with Podman
+
+CI is authoritative, but waiting on it for every patch tweak is slow. On a
+Windows host with Podman Desktop (WSL backend) this builds the same blob in
+minutes:
+
+```bash
+bash ci/podman-build-uboot-emmc.sh
+```
+
+The launcher starts the Podman machine if it is stopped, mounts the repo at
+`/work`, and runs `ci/build-uboot-emmc-container.sh` inside `ubuntu:24.04`.
+Output lands in `<repo>/out/` (gitignored): the blob, `emmc-uboot.config`,
+`emmc-uboot.sha256` and `source.sha256`. All the CI assertions run, and the
+script deletes the blob and exits non-zero if any of them fail, so a bad blob
+can never be mistaken for a good one.
+
+Two environment notes:
+
+- The script strips CR from the patch before `patch -p1`; a CRLF checkout
+  makes `patch` fail with hunks that "look" correct.
+- `wsl.exe` must not be on the host command blacklist, otherwise Podman cannot
+  reach its WSL machine and every container command fails with
+  `PROGRAM BLOCKED BY SECURITY POLICY`.
