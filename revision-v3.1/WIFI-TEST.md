@@ -113,3 +113,46 @@ Keep the recovery directory; repeated arm refuses to overwrite that backup.
 Offline checks: ShellCheck, bash syntax, candidate 12 MHz readback, byte-identical
 round trip, refusal of a mismatched input / existing output. These are not
 hardware validation. No physical device is accessible from the build host.
+
+## 2026-09-13: v3 on eMMC, and why `reboot` is the wrong instrument
+
+The v3 image (not v3.1) ships the reference 25 MHz SDIO clock, so Wi-Fi was
+dead on the box after installing to eMMC. `mmc1: new high speed SDIO card at
+address 390b` enumerates fine and every firmware file is read, but
+`aicwf_sdio_tx_msg` returns -110 while uploading `fmacfw_8800d80_u02.bin`,
+`aicbsp_dummy_sdmmc` probe of function 1 and 2 fails with -110, and
+`rwnx_mod_init, set power on fail!` leaves no wlan0.
+
+Clock sweep on that unit, all by `reboot`:
+
+| SDIO clock | wlan0 |
+|---|---|
+| 25 MHz (reference) | NO, NO |
+| 24 MHz | YES once, then NO, NO |
+| 20 MHz | NO, NO |
+| 12.5 MHz | YES |
+
+**Do not read that table as a clock result.** Every success recorded earlier in
+this file required `sync; poweroff` and **30 seconds with power disconnected**.
+`reboot` never removes vcc3v3 from the AIC chip, so the chip is not hard
+reset between attempts and can stay in the state that failed. Warm reboots
+therefore cannot measure cold-boot reliability in either direction: they can
+fail a good clock and, as the single 12.5 MHz pass shows, occasionally pass
+despite a bad state. Only a power-disconnected cold boot counts.
+
+What was actually changed on the box, pending cold-boot confirmation:
+`/boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb` -> `/soc/mmc@4021000
+max-frequency = 24000000`, the value v3.1.1 already adopted and that passed
+three cold boots plus 300 s TCP per direction. The pre-change DTB (25 MHz) is
+kept at `/root/dtb-backup-20260913.dtb`.
+
+To make cold boots auditable without watching the console,
+`/root/h728-wifi-bootcheck.sh` is installed and enabled as
+`h728-wifi-bootcheck.service`. Each boot appends to `/root/wifi-boot-log.txt`:
+the DTB clock, whether wlan0 exists and its MAC, `set power on fail` count,
+`sdio_err` count, and the live `mmc1` clock. Cold boot three times, then read
+that file.
+
+Note this unit's eMMC boot uses the v4 bootloader blob, so the boot path
+differs from the SD-boot tests above; that is a second variable, not
+controlled for here.
