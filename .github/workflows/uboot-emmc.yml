@@ -17,6 +17,7 @@ on:
       - '.github/workflows/uboot-emmc.yml'
       - 'revision-v3/uboot-emmc.patch'
       - 'revision-v3/build-emmc-uboot.sh'
+      - 'revision-v3/configure-emmc-uboot.sh'
       - 'ci/uboot-emmc.sha256'
 
 permissions:
@@ -62,13 +63,9 @@ jobs:
           test -d "src/arm-trusted-firmware-${ATF_COMMIT}"
           sha256sum u-boot.tar.gz atf.tar.gz | tee out/source.sha256
 
-      - name: Verify source hashes when pinned
+      - name: Verify pinned source hashes
         run: |
-          if [[ -f ci/uboot-emmc.sha256 ]]; then
-            sha256sum -c ci/uboot-emmc.sha256
-          else
-            echo '::warning::ci/uboot-emmc.sha256 is absent, so the source archives are not hash-pinned. Copy out/source.sha256 into ci/uboot-emmc.sha256 to pin them.'
-          fi
+          sha256sum -c ci/uboot-emmc.sha256
 
       - name: Build BL31
         env:
@@ -90,16 +87,14 @@ jobs:
           make -C "$uboot" CROSS_COMPILE=aarch64-linux-gnu- x96q_pro_plus_defconfig
           cd "$uboot"
           patch -p1 < "$GITHUB_WORKSPACE/revision-v3/uboot-emmc.patch"
-          scripts/config --set-val MMC_SUNXI_SLOT_EXTRA 2
-          scripts/config --set-str IDENT_STRING ' H728 eMMC v3'
-          scripts/config --enable OF_LIBFDT_OVERLAY
+          bash "$GITHUB_WORKSPACE/revision-v3/configure-emmc-uboot.sh" apply
           # H728 / A523: cap CONFIG_SYS_MMC_MAX_BLK_COUNT at 1 for this blob.
           # Multi-block reads to the eMMC fail intermittently (a CMD18 never
           # raises command-done), while single-block reads never failed once.
           # mmc_bread() splits a request on b_max, so this keeps every request
           # on the path that works. U-Boot proper pays for it only in speed.
-          scripts/config --set-val CONFIG_SYS_MMC_MAX_BLK_COUNT 1
           make CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+          bash "$GITHUB_WORKSPACE/revision-v3/configure-emmc-uboot.sh" check
           make -j"$(nproc)" CROSS_COMPILE=aarch64-linux-gnu- EXTRAVERSION=-h728-emmc-v3
           test "$(grep '^CONFIG_MMC_SUNXI_SLOT_EXTRA=' .config)" = CONFIG_MMC_SUNXI_SLOT_EXTRA=2
           test "$(grep '^CONFIG_SYS_MMC_MAX_BLK_COUNT=' .config)" = CONFIG_SYS_MMC_MAX_BLK_COUNT=1

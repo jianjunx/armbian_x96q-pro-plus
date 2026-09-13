@@ -2,6 +2,15 @@
 
 Two independent workflows exist:
 
+2026-09-13 integration update: the full SD job now targets v3.1.2, first builds
+the eMMC payload with `build-uboot-emmc-container.sh`, and installs/compares it
+inside the image. The standalone blob workflow remains available independently.
+`ci/uboot-emmc.sha256` now pins the two archives to the existing MATERIALS/
+SHA256SUMS records; the container builder fails on missing/mismatched pins.
+The new payload is inert data until a future reviewed installation workflow;
+neither the SD bootloader nor existing device eMMC is overwritten by assembly.
+Older v3.1.1 references below describe preserved releases.
+
 - `image-release.yml` assembles and publishes the full SD image (described below).
 - `uboot-emmc.yml` builds only the eMMC bootloader blob (see the last section).
 
@@ -74,11 +83,9 @@ inside the local `h728-image-build` container. Changing one without the other
 makes the two outputs diverge; keep the pinned commits, the patch and the
 `scripts/config` edits identical.
 
-Upstream sources are downloaded by commit SHA but are not hash-pinned unless
-`ci/uboot-emmc.sha256` exists. GitHub regenerates archive tarballs, so their
-hashes can change for reasons unrelated to the source. Copy `source.sha256` from
-a run's artifact into `ci/uboot-emmc.sha256` to pin them; the workflow then
-verifies before building and warns while the file is absent.
+Upstream sources are downloaded by commit SHA and checked against mandatory
+`ci/uboot-emmc.sha256`. A mismatch stops the build; do not automatically replace
+the pins with a failed run's hashes. Investigate upstream archive changes first.
 
 The blob is verified, not merely produced: the compiled board DTB must carry
 `bus-width = <1>` and `max-frequency = <26000000>` on `/soc/mmc@4022000`, and
@@ -86,11 +93,16 @@ the blob must contain `eGON.BT0` at **byte offset 4** of the file (byte 0 is the
 branch instruction). 8192 is where it lands *on the device*, because the blob is
 written with `dd seek=8`; it is not an offset inside the file.
 
-Installing a blob is a separate manual step: copy it to the SD card's FAT
-partition, boot from SD, interrupt autoboot, and write it to the eMMC user area
-at sector 16. The eMMC partition table starts at 1 MiB, so this replaces only
-the bootloader area. The SD card keeps its own bootloader and stays bootable
-regardless of the outcome.
+Installing a blob is a separate, destructive operation. The former UART
+writers are disabled; see `tools/serial/README.md`. Never infer the safe write
+extent from a nominal 1 MiB layout: inspect the actual first partition and
+verify a backup and device identity. The partition table itself is not at 1 MiB.
+The v3.1.2 SD pipeline packages this blob as inert data. Its eMMC installer
+remains disabled; a standalone artifact is not a newly integrated image release.
+
+All three builders now apply and check `revision-v3/configure-emmc-uboot.sh`:
+slot 2, overlays, identity and a global single-block cap. Keep this file alongside
+the legacy build script when copying revision-v3 into the Linux container.
 
 ## Building the blob locally with Podman
 

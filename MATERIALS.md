@@ -1,5 +1,37 @@
 # X96Q Pro+ / Allwinner H728 Armbian materials
 
+## v3.1.3 installation candidate (2026-09-13)
+
+User authorized fresh eMMC overwrite and explicitly chose no backup. New
+installer requires --install --no-backup plus typed target/CID consent; default
+--check is non-destructive, external verified backup remains an alternative.
+It is hardware-UNTESTED as a complete workflow. No destructive branch was run
+in development. Static checks and complete offline image verification passed.
+Local image: `armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1.3_SD.img`.
+SHA-256: `07625d11b198bf9b42c88d185a2566993c4e990d5ef692d95277e71fd4a53e17`.
+Adjacent hashes, package inventory and verification report retained. +h728.7
+uses the same matched Image/modules/24 MHz DTB; SD U-Boot is unchanged.
+The v3.1.2 local image is preserved. No new GitHub Release has been published.
+Do not distribute an installed-device backup; see revision-v3.1/EMMC-INSTALL.md.
+
+## v3.1.2 integration under validation (2026-09-13)
+
+Reuses pristine v3 CI inputs and matched Linux Image/modules; +h728.6 packages
+the same Wi-Fi 24 MHz DTB as +h728.5. Adds an inert eMMC U-Boot payload built
+from the existing b99f4a9e U-Boot / b5de74a TF-A archives, now also pinned in
+ci/uboot-emmc.sha256. SD boot bytes and eMMC installer refusal are preserved.
+Payload/config/DTB/source/recipe hashes are retained in the image and delivery.
+No new image release or hardware validation is claimed by this source change.
+
+Local validation completed: both pinned archives verified; TF-A/U-Boot built
+successfully (773113-byte blob SHA-256
+`b93037e2f34810cf8f427bd98a9559c86e1a6d25752fbab2a395e5f1dde0f183`).
+Full image assembly and read-only verification passed, followed by a verified
+copy to `armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1.2_SD.img`.
+Raw image SHA-256: `795fcb3c005527134638830bcb266eee5cec3ec2cb356d5a98b603e760b85a06`.
+Its `.sha256`, `.verification.txt` and `.packages.txt` are adjacent. This is a
+local build, not a GitHub Actions run or published Release. No hardware tested.
+
 ## v3.1.1 Wi-Fi clock fix (2026-09-12)
 
 Published prerelease v3.1.1-ci.6.1, Actions run 34678002094, source c0c117f.

@@ -5,6 +5,7 @@ expect(1): wake the prompt, log in, then run each command with a sentinel so
 we know where its output ends.
 """
 
+import getpass
 import re
 import sys
 import time
@@ -59,7 +60,9 @@ def main():
         ser.write(b"root\n")
         out = expect(ser, b"assword:", 20)
         if b"assword:" in out:
-            ser.write(b"1212e\n")
+            password = getpass.getpass("Device root password (not saved): ")
+            ser.write(password.encode("utf-8") + b"\n")
+            del password
         expect(ser, b"#", 25)
     else:
         # probably already logged in; verify with a probe

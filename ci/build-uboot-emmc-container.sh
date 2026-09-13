@@ -13,6 +13,8 @@ set -euo pipefail
 
 UBOOT_COMMIT=b99f4a9e0778f4f402619d70976537d4833d7eab
 ATF_COMMIT=b5de74a685fb73b784e45bbbd18dd9a0c528d8b2
+out=${H728_UBOOT_OUTPUT_DIR:-/work/out}
+test ! -e "$out/bundle.sha256" || { echo 'Refusing to overwrite completed payload' >&2; exit 1; }
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
@@ -24,22 +26,17 @@ apt-get install -y --no-install-recommends \
   python3-jsonschema python3-pyelftools swig
 
 build=$(mktemp -d /tmp/h728-emmc-uboot.XXXXXX)
-mkdir -p /work/out
+mkdir -p "$out"
 cd "$build"
 
 curl -fsSL --retry 3 -o u-boot.tar.gz \
   "https://github.com/apritzel/u-boot/archive/${UBOOT_COMMIT}.tar.gz"
 curl -fsSL --retry 3 -o atf.tar.gz \
   "https://github.com/jernejsk/arm-trusted-firmware/archive/${ATF_COMMIT}.tar.gz"
+sha256sum u-boot.tar.gz atf.tar.gz | tee "$out/source.sha256"
+sha256sum -c /work/ci/uboot-emmc.sha256
 tar -xzf u-boot.tar.gz
 tar -xzf atf.tar.gz
-sha256sum u-boot.tar.gz atf.tar.gz | tee /work/out/source.sha256
-
-if [[ -f /work/ci/uboot-emmc.sha256 ]]; then
-  sha256sum -c /work/ci/uboot-emmc.sha256
-else
-  echo 'WARNING: ci/uboot-emmc.sha256 is absent; source archives are not hash-pinned.'
-fi
 
 atf="$PWD/arm-trusted-firmware-${ATF_COMMIT}"
 uboot="$PWD/u-boot-${UBOOT_COMMIT}"
@@ -64,9 +61,7 @@ if [[ "${H728_UBOOT_DEBUG:-0}" == "1" ]]; then
   patch -p1 <"$build/spl-debug.patch"
 fi
 
-scripts/config --set-val MMC_SUNXI_SLOT_EXTRA 2
-scripts/config --set-str IDENT_STRING ' H728 eMMC v3'
-scripts/config --enable OF_LIBFDT_OVERLAY
+bash /work/revision-v3/configure-emmc-uboot.sh apply
 # H728 / A523: cap CONFIG_SYS_MMC_MAX_BLK_COUNT at 1 for this blob.
 #
 # Instrumented hardware runs (2026-09-13) showed multi-block reads to the
@@ -82,7 +77,6 @@ scripts/config --enable OF_LIBFDT_OVERLAY
 #
 # This only affects the eMMC blob: the SD card keeps its own bootloader, which
 # still reads in large transfers.
-scripts/config --set-val CONFIG_SYS_MMC_MAX_BLK_COUNT 1
 
 # H728_UBOOT_DEBUG=1 turns on verbose SPL logging. Use it when SPL behaviour on
 # hardware has to be observed (bus width, clock, raw read errors); it is never
@@ -100,14 +94,15 @@ if [[ "${H728_UBOOT_DEBUG:-0}" == "1" ]]; then
 fi
 
 make CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+bash /work/revision-v3/configure-emmc-uboot.sh check
 make -j"$(nproc)" CROSS_COMPILE=aarch64-linux-gnu- EXTRAVERSION=-h728-emmc-v3
 test "$(grep '^CONFIG_MMC_SUNXI_SLOT_EXTRA=' .config)" = CONFIG_MMC_SUNXI_SLOT_EXTRA=2
 
 # ---- assertions, identical in spirit to the CI job ------------------------
 dtb="$uboot/arch/arm/dts/sun55i-h728-x96qpro+.dtb"
-blob=/work/out/u-boot-sunxi-with-spl-emmc.bin
+blob=$out/u-boot-sunxi-with-spl-emmc.bin
 cp "$uboot/u-boot-sunxi-with-spl.bin" "$blob"
-cp "$uboot/.config" /work/out/emmc-uboot.config
+cp "$uboot/.config" "$out/emmc-uboot.config"
 
 fail=0
 check() { # name actual expected
@@ -137,8 +132,8 @@ else
   fail=1
 fi
 
-(cd /work/out && sha256sum u-boot-sunxi-with-spl-emmc.bin >emmc-uboot.sha256)
-cat /work/out/emmc-uboot.sha256
+(cd "$out" && sha256sum u-boot-sunxi-with-spl-emmc.bin >emmc-uboot.sha256)
+cat "$out/emmc-uboot.sha256"
 
 if [[ $fail -ne 0 ]]; then
   echo "ERROR: eMMC bootloader assertions failed; refusing to publish the blob."
@@ -146,4 +141,7 @@ if [[ $fail -ne 0 ]]; then
   exit 1
 fi
 
-echo "Blob written to /work/out/u-boot-sunxi-with-spl-emmc.bin"
+echo "Blob written to $blob"
+cp "$dtb" "$out/emmc-uboot.dtb"
+sha256sum /work/revision-v3/uboot-emmc.patch /work/revision-v3/configure-emmc-uboot.sh > "$out/recipe.sha256"
+(cd "$out" && sha256sum u-boot-sunxi-with-spl-emmc.bin emmc-uboot.config emmc-uboot.dtb source.sha256 recipe.sha256 > bundle.sha256)

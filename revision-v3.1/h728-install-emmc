@@ -1,17 +1,201 @@
 #!/bin/bash
+# Experimental v3.1.3 installer. Only the owner runs --install on hardware.
+# No environment override for sysfs, target, model, kernel or payload checks.
 set -euo pipefail
-[[ $# -le 1 && ${1:---check} == --check ]] || {
-    echo 'eMMC installation is disabled in v3.1: standalone boot is unresolved.' >&2
-    echo 'This image only supports: sudo h728-install-emmc --check' >&2
-    exit 1
-}
-[[ $EUID == 0 ]] || { echo 'Run as root.'; exit 1; }
-[[ $(tr -d '\0' </proc/device-tree/model) == 'X96Q Pro+' ]] || exit 1
-[[ $(uname -r) == 7.2.0-7-MANJARO-ARM ]] || exit 1
-echo 'Read-only inventory. No partitions will be mounted or written.'
-lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
-for path in /sys/block/mmcblk[0-9]*; do
-    [[ ${path##*/} =~ ^mmcblk[0-9]+$ && -r $path/device/type ]] || continue
-    printf '%s type=%s\n' "${path##*/}" "$(cat "$path/device/type")"
+die() { echo "STOP: $*" >&2; exit 1; }
+mode=${1:---check}
+backup_dir=''
+no_backup=0
+case "$mode:$#" in
+    --check:0|--check:1) ;;
+    --install:3)
+        [[ $2 == --backup-dir ]] || die 'Expected --backup-dir'
+        backup_dir=$(realpath -e -- "$3")
+        ;;
+    --install:2)
+        [[ $2 == --no-backup ]] || die 'Expected --no-backup'
+        no_backup=1
+        ;;
+    *) die 'Usage: h728-install-emmc --check | --install --backup-dir /mnt/usb | --install --no-backup' ;;
+esac
+[[ $EUID == 0 ]] || die 'Run as root'
+for tool in findmnt lsblk blockdev blkid sha256sum dd cmp sfdisk wipefs partprobe \
+    udevadm mkfs.vfat mkfs.ext4 rsync mount umount mountpoint fdtget flock \
+    realpath df du awk sed grep stat sync fsck.vfat e2fsck; do
+    command -v "$tool" >/dev/null || die "Missing dependency: $tool"
 done
-echo 'Detection is not proof of standalone eMMC boot or write stability.'
+exec 9>/run/h728-install-emmc.lock
+flock -n 9 || die 'Another installation is running'
+[[ $(tr -d '\0' </proc/device-tree/model) == 'X96Q Pro+' ]] || die 'Wrong board'
+[[ $(uname -r) == 7.2.0-7-MANJARO-ARM ]] || die 'Wrong kernel'
+grep -qx VERSION=v3.1.3 /etc/h728-image-release || die 'Boot the v3.1.3 SD image'
+targets=()
+for path in /sys/block/mmcblk*; do
+    [[ ${path##*/} =~ ^mmcblk[0-9]+$ && -r $path/device/type ]] || continue
+    [[ $(<"$path/device/type") != MMC ]] || targets+=("/dev/${path##*/}")
+done
+[[ ${#targets[@]} == 1 ]] || die 'Expected exactly one eMMC'
+target=${targets[0]}
+source_part=$(readlink -f "$(findmnt -nro SOURCE /)")
+source_disk=$(lsblk -ndo PKNAME "$source_part")
+[[ $source_disk =~ ^mmcblk[0-9]+$ ]] || die 'Root must be a physical SD partition'
+[[ $(<"/sys/block/$source_disk/device/type") == SD ]] || die 'Root is not on SD'
+[[ /dev/$source_disk != "$target" ]] || die 'Target is the running root'
+boot_source=$(readlink -f "$(findmnt -nro SOURCE /boot)")
+[[ $(lsblk -ndo PKNAME "$boot_source") == "$source_disk" ]] || die '/boot must be on the same SD'
+[[ $(findmnt -nro FSTYPE /) == ext4 && $(findmnt -nro FSTYPE /boot) == vfat ]] || die 'Unsupported filesystems'
+cid=$(<"/sys/block/${target##*/}/device/cid")
+[[ $cid =~ ^[0-9a-fA-F]{32}$ ]] || die 'Invalid CID'
+capacity=$(blockdev --getsize64 "$target")
+assert_target() {
+    [[ -b $target && $(<"/sys/block/${target##*/}/device/type") == MMC ]] || die 'Target changed'
+    [[ $(<"/sys/block/${target##*/}/device/cid") == "$cid" ]] || die 'CID changed'
+    [[ $(blockdev --getsize64 "$target") == "$capacity" ]] || die 'Capacity changed'
+    [[ $(blockdev --getro "$target") == 0 && $(blockdev --getss "$target") == 512 ]] || die 'Read-only or unsupported sector size'
+    if lsblk -nrpo MOUNTPOINTS "$target" | grep -q '[^[:space:]]'; then die 'Unmount all eMMC filesystems/swap'; fi
+    for entry in /sys/class/block/"${target##*/}" /sys/class/block/"${target##*/}"p*; do
+        if compgen -G "$entry/holders/*" >/dev/null; then die 'Target has holders'; fi
+    done
+    while read -r swap _; do
+        [[ $swap == Filename ]] && continue
+        [[ $(readlink -f "$swap") != "$target"* ]] || die 'Target has active swap'
+    done </proc/swaps
+}
+assert_target
+payload=/usr/lib/h728/uboot
+bash /usr/local/lib/h728-check-emmc-payload "$payload"
+blob=$payload/u-boot-sunxi-with-spl-emmc.bin
+blob_size=$(stat -c%s "$blob")
+dtb=/boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb
+printf '%s  %s\n' 5e4c838516b43e7667a583859b671cf5eb00316674eb950d0eb5bb67b2502bc7 "$dtb" | sha256sum -c -
+cmp "$dtb" /usr/lib/linux-image-h728-manjaro/sun55i-h728-x96qpro+.dtb
+grep -q '^LABEL armbian-h728$' /boot/extlinux/extlinux.conf || die 'Missing normal boot entry'
+# New DOS layout starts FAT at 4 MiB, not at the SPL offset.
+((8192 + blob_size < 8192 * 512)) || die 'Blob overlaps proposed first partition'
+used=$(df -B1 --output=used / | tail -1 | tr -d ' ')
+((capacity >= 8*1024*1024*1024 && capacity > used + 2*1024*1024*1024)) || die 'Insufficient eMMC capacity'
+boot_used=$(du -sb /boot | awk '{print $1}')
+((boot_used < 480*1024*1024)) || die '/boot too large for 512 MiB FAT'
+# Reject other persistent fstab entries instead of silently cloning SD mounts.
+awk '!/^#/ && NF && $2!="/" && $2!="/boot" && $1!="tmpfs" {exit 1}' /etc/fstab || die 'Unsupported extra fstab entries'
+awk '!/^#/ {if($2=="/")r++; if($2=="/boot")b++} END {exit !(r==1 && b==1)}' /etc/fstab || die 'Ambiguous root/boot fstab entries'
+echo "SD: $source_part; eMMC: $target; CID: $cid; bytes: $capacity"
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS "$target"
+dd if="$target" of=/dev/null bs=4M count=64 iflag=direct status=progress
+[[ $mode == --install ]] || { echo 'CHECK PASSED (no eMMC writes). Hardware installation remains experimental.'; exit 0; }
+[[ -t 0 && -r /dev/tty ]] || die 'Interactive terminal required'
+if (( ! no_backup )); then
+[[ -d $backup_dir ]] || die 'Backup directory missing'
+backup_source=$(readlink -f "$(findmnt -nro SOURCE -T "$backup_dir")")
+backup_disk=$(lsblk -ndo PKNAME "$backup_source")
+[[ -n $backup_disk ]] || backup_disk=${backup_source##*/}
+[[ $backup_disk =~ ^sd[a-z]+$ && $(lsblk -ndo TRAN "/dev/$backup_disk") == usb ]] || die 'Backup must be on an externally mounted USB disk'
+[[ $(findmnt -nro FSTYPE -T "$backup_dir") =~ ^(ext4|exfat|ntfs3|xfs|btrfs)$ ]] || die 'Use ext4/exFAT/NTFS3/XFS/Btrfs for the large backup file'
+free=$(df -B1 --output=avail "$backup_dir" | tail -1 | tr -d ' ')
+((free > capacity + 1024*1024*1024)) || die 'External backup disk needs eMMC capacity plus 1 GiB free'
+fi
+echo 'Stop databases, containers and other workloads. Use wired SSH or UART.'
+echo 'Copies this live SD system including its configured credentials. Do not redistribute a device backup.'
+echo 'Will ERASE ALL eMMC user-area partitions. boot0/1 and EXT_CSD remain unchanged.'
+if ((no_backup)); then
+    echo 'NO BACKUP: old data will be lost; this installer cannot undo the operation.'
+    token="NO BACKUP ERASE $target ${cid: -8}"
+else
+    echo 'Full user-area backup will be verified before erasing.'
+    token="BACKUP AND ERASE $target ${cid: -8}"
+fi
+echo "Type exactly: $token"
+read -r answer </dev/tty
+[[ $answer == "$token" ]] || die 'Cancelled'
+assert_target
+backup='NOT CREATED (--no-backup selected)'
+if (( ! no_backup )); then
+backup=$(mktemp -d "$backup_dir/h728-emmc-backup.XXXXXX")
+chmod 700 "$backup"
+echo "Backup directory: $backup"
+dd if="$target" of="$backup/user-area.img" bs=4M iflag=fullblock conv=fsync status=progress
+[[ $(stat -c%s "$backup/user-area.img") == "$capacity" ]] || die 'Incomplete backup'
+before=$(sha256sum "$backup/user-area.img" | cut -d' ' -f1)
+readback=$(dd if="$target" bs=4M iflag=direct status=progress | sha256sum | cut -d' ' -f1)
+[[ $before == "$readback" ]] || die 'Backup does not match eMMC'
+printf '%s  user-area.img\n' "$before" >"$backup/SHA256SUMS"
+printf 'device=%s\ncid=%s\nbytes=%s\n' "$target" "$cid" "$capacity" >"$backup/identity.txt"
+sync -f "$backup"
+fi
+work=$(mktemp -d /tmp/h728-emmc-install.XXXXXX)
+dest=$work/dest
+modified=0
+cleanup() {
+    local status=$?
+    trap - EXIT
+    for path in "$dest/boot" "$dest"; do
+        if mountpoint -q "$path"; then umount "$path" || status=1; fi
+    done
+    if ((status != 0 && modified)); then
+        echo "INSTALL FAILED: eMMC may be partially modified. Keep SD inserted. Backup: $backup" >&2
+    fi
+    exit "$status"
+}
+trap cleanup EXIT
+mkdir -p "$dest"
+assert_target
+bash /usr/local/lib/h728-check-emmc-payload "$payload"
+modified=1
+wipefs --all "$target"
+printf 'label: dos\nunit: sectors\n\nstart=8192, size=1048576, type=c, bootable\nstart=1056768, type=83\n' | sfdisk "$target"
+partprobe "$target"
+udevadm settle --timeout=20
+boot=${target}p1
+rootpart=${target}p2
+[[ -b $boot && -b $rootpart ]] || die 'Partitions did not appear'
+[[ $(lsblk -ndo PKNAME "$boot") == "${target##*/}" && $(lsblk -ndo PKNAME "$rootpart") == "${target##*/}" ]] || die 'Unexpected partition parent'
+[[ $(<"/sys/class/block/${boot##*/}/start") == 8192 ]] || die 'Unexpected first partition boundary'
+mkfs.vfat -F32 -n H728_BOOT "$boot"
+mkfs.ext4 -F -L h728_emmc "$rootpart"
+mount "$rootpart" "$dest"
+expected=$(dd if=/dev/urandom bs=1M count=64 status=none | tee "$dest/.h728-io-test" | sha256sum | cut -d' ' -f1)
+sync -f "$dest/.h728-io-test"
+actual=$(dd if="$dest/.h728-io-test" bs=4M iflag=direct status=none | sha256sum | cut -d' ' -f1)
+[[ $actual == "$expected" ]] || die 'eMMC file write/read mismatch'
+rm "$dest/.h728-io-test"
+mkdir "$dest/boot"
+mount "$boot" "$dest/boot"
+excludes=(--exclude=/dev/ --exclude=/proc/ --exclude=/sys/ --exclude=/run/
+    --exclude=/tmp/ --exclude=/mnt/ --exclude=/media/ --exclude=/boot/
+    --exclude=/lost+found --exclude=/var/log/ --exclude=/var/log.hdd/)
+rsync -aHAXx --numeric-ids --info=progress2 "${excludes[@]}" / "$dest/"
+mkdir -p "$dest"/{dev,proc,sys,run,tmp,mnt,media,var/log,var/log.hdd}
+chmod 1777 "$dest/tmp"
+rsync -rt --info=progress2 --exclude=/h728-logs/ --exclude=/h728-diagnostics.txt /boot/ "$dest/boot/"
+# Verify the boot-critical payload before changing UUIDs or installing SPL.
+for tree in lib/modules usr/lib/linux-image-h728-manjaro usr/lib/h728/uboot; do
+    rsync -rcn --out-format='%n' "/$tree/" "$dest/$tree/" >"$work/compare"
+    [[ ! -s $work/compare ]] || die "Copy differs: $tree"
+done
+rsync -rcn --out-format='%n' --exclude=/h728-logs/ --exclude=/h728-diagnostics.txt /boot/ "$dest/boot/" >"$work/compare"
+[[ ! -s $work/compare ]] || die 'Boot copy differs'
+rootuuid=$(blkid -s UUID -o value "$rootpart")
+bootuuid=$(blkid -s UUID -o value "$boot")
+[[ -n $rootuuid && -n $bootuuid ]] || die 'Missing new UUID'
+awk -v r="$rootuuid" -v b="$bootuuid" '$2=="/" {$1="UUID=" r} $2=="/boot" {$1="UUID=" b} {print}' /etc/fstab >"$dest/etc/fstab"
+sed -i "s/^rootdev=.*/rootdev=UUID=$rootuuid/" "$dest/boot/armbianEnv.txt"
+sed -i -E "s/root=UUID=[0-9a-f-]+/root=UUID=$rootuuid/g" "$dest/boot/extlinux/extlinux.conf"
+sed -i 's/^DEFAULT .*/DEFAULT armbian-h728/' "$dest/boot/extlinux/extlinux.conf"
+sed -i 's@^fdtfile=.*@fdtfile=allwinner/sun55i-h728-x96qpro+.dtb@' "$dest/boot/armbianEnv.txt"
+sed -i 's@^[[:space:]]*FDT .*@    FDT /dtb/allwinner/sun55i-h728-x96qpro+.dtb@' "$dest/boot/extlinux/extlinux.conf"
+# The stock fallback disables eMMC: do not offer that SD-only entry here.
+awk '$1=="LABEL" {seen=1; keep=($2=="armbian-h728")} !seen || keep' "$dest/boot/extlinux/extlinux.conf" >"$work/extlinux.conf"
+install -m0644 "$work/extlinux.conf" "$dest/boot/extlinux/extlinux.conf"
+grep -qx "rootdev=UUID=$rootuuid" "$dest/boot/armbianEnv.txt"
+awk -v id="$rootuuid" '$1=="APPEND" {n++; if(index($0,"root=UUID=" id)==0) exit 1} END {if(!n) exit 1}' "$dest/boot/extlinux/extlinux.conf"
+[[ $(<"/sys/block/${target##*/}/device/cid") == "$cid" ]] || die 'CID changed before bootloader write'
+dd if="$blob" of="$target" bs=1024 seek=8 conv=notrunc,fsync status=progress
+cmp -n "$blob_size" -i 8192:0 "$target" "$blob"
+sync
+umount "$dest/boot"
+umount "$dest"
+fsck.vfat -n "$boot"
+e2fsck -fn "$rootpart"
+trap - EXIT
+echo "INSTALL COMPLETE; no reboot. Backup status: $backup"
+echo 'Power off cleanly, remove SD, cold boot. Keep SD/backup for recovery; collect UART and test Wi-Fi/Ethernet.'

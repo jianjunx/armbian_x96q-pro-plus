@@ -1,4 +1,4 @@
-name: Build and release v3.1.1 SD image
+name: Build and release v3.1.3 SD image
 on:
   push:
     branches: [main]
@@ -6,6 +6,8 @@ on:
       - '.github/workflows/image-release.yml'
       - 'ci/Dockerfile'
       - 'ci/build.sh'
+      - 'ci/build-uboot-emmc-container.sh'
+      - 'ci/uboot-emmc.sha256'
       - 'ci/bundle.sha256'
       - 'ci/inputs.sha256'
       - 'ci/release-notes.md'
@@ -55,6 +57,13 @@ jobs:
           sha256sum -c ci/bundle.sha256
           tar -xJf h728-v3-inputs.tar.xz -C armbian-build --no-same-owner
           (cd armbian-build && sha256sum -c ../ci/inputs.sha256)
+      - name: Build matched eMMC payload (never written to a device)
+        run: |
+          mkdir -p armbian-build/cache/h728-emmc-build
+          docker run --rm -v "$PWD:/work:ro" \
+            -e H728_UBOOT_OUTPUT_DIR=/out \
+            -v "$PWD/armbian-build/cache/h728-emmc-build:/out" \
+            ubuntu:24.04 bash /work/ci/build-uboot-emmc-container.sh
       - name: Build ARM64 assembly environment
         run: docker build -t h728-ci -f ci/Dockerfile .
       - name: Assemble, verify and compress a fresh SD image
@@ -76,7 +85,7 @@ jobs:
           if [[ "$REF_TYPE" = tag ]]; then
             tag_args=(--verify-tag)
           else
-            TAG="v3.1.1-ci.${RUN_NUMBER}.${RUN_ATTEMPT}"
+            TAG="v3.1.3-ci.${RUN_NUMBER}.${RUN_ATTEMPT}"
             tag_args=(--target "$COMMIT")
           fi
           cp ci/release-notes.md armbian-build/delivery/release-notes.md

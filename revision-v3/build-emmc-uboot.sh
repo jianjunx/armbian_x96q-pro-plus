@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+config_script=$(cd -- "$(dirname -- "$0")" && pwd)/configure-emmc-uboot.sh
 work=$(mktemp -d /tmp/h728-emmc-uboot.XXXXXX)
 tar -xf /tmp/h728-uboot-source.tar.gz -C "$work"
 tar -xf /tmp/h728-atf-source.tar.gz -C "$work"
@@ -10,10 +11,9 @@ cp "$atf/build/sun55i_a523/release/bl31.bin" "$uboot/bl31.bin"
 make -C "$uboot" CROSS_COMPILE=aarch64-linux-gnu- x96q_pro_plus_defconfig
 cd "$uboot"
 patch -p1 < /armbian/cache/h728-v3-input/uboot-emmc.patch
-scripts/config --set-val MMC_SUNXI_SLOT_EXTRA 2
-scripts/config --set-str IDENT_STRING ' H728 eMMC v3'
-scripts/config --enable OF_LIBFDT_OVERLAY
+bash "$config_script" apply
 make CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+bash "$config_script" check
 make -j4 CROSS_COMPILE=aarch64-linux-gnu- EXTRAVERSION=-h728-emmc-v3
 test "$(grep '^CONFIG_MMC_SUNXI_SLOT_EXTRA=' .config)" = CONFIG_MMC_SUNXI_SLOT_EXTRA=2
 out=/armbian/cache/h728-v3

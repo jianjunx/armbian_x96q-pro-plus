@@ -5,6 +5,10 @@ src=/armbian/cache/h728-v3.1-input
 source "$src/settings.sh"
 # shellcheck source=base-common.sh
 source "$H728_COMMON"
+emmc_payload=/armbian/cache/h728-emmc-build
+bash "$src/check-emmc-payload.sh" "$emmc_payload"
+cmp "$src/emmc-source.expected" "$emmc_payload/source.sha256"
+cmp "$src/emmc-recipe.expected" "$emmc_payload/recipe.sha256"
 base=/armbian/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.img
 oldpkg=/armbian/output/debs/linux-image-h728-manjaro_7.2.0-7+h728.3_arm64.deb
 test ! -e "$image" || { echo 'Working image exists; preserve it, do not overwrite.'; exit 1; }
@@ -80,15 +84,20 @@ sed '/^report=/d; s/Armbian v3 hardware report/Armbian v3.1 hardware report/; s/
 chmod 755 "$root/usr/local/lib/h728-diagnostics-base"
 install -m0755 "$src/h728-diagnostics" "$root/usr/local/sbin/h728-diagnostics"
 install -m0755 "$src/h728-install-emmc" "$root/usr/local/sbin/h728-install-emmc"
+install -m0755 "$src/check-emmc-payload.sh" "$root/usr/local/lib/h728-check-emmc-payload"
+for file in u-boot-sunxi-with-spl-emmc.bin emmc-uboot.config emmc-uboot.dtb emmc-uboot.sha256 source.sha256 recipe.sha256 bundle.sha256; do
+    install -m0644 "$emmc_payload/$file" "$root/usr/lib/h728/uboot/$file"
+done
 install -m0644 "$src/h728-diagnostics.service" "$root/etc/systemd/system/h728-diagnostics.service"
 if [[ -f $root/lib/systemd/system/exim4.service || -f $root/usr/lib/systemd/system/exim4.service || -f $root/etc/init.d/exim4 ]]; then
     chroot "$root" systemctl disable exim4.service
     chroot "$root" systemctl mask exim4.service
 fi
 install -m0644 "$src/H728-README.txt" "$root/boot/H728-README.txt"
-sed -i 's/v3\.1/v3.1.1/g' "$root/boot/extlinux/extlinux.conf" "$root/boot/boot.cmd"
-mkimage -A arm64 -T script -C none -n 'H728 Trixie v3.1.1 SD' -d "$root/boot/boot.cmd" "$root/boot/boot.scr"
-printf 'VERSION=v3.1.1\nMODE=standalone-sd\nEMMC_INSTALL=disabled\nWIFI_SDIO_MAX_HZ=24000000\n' >"$root/etc/h728-image-release"
+install -m0644 "$src/EMMC-INSTALL.md" "$root/boot/EMMC-INSTALL.md"
+sed -i 's/v3\.1/v3.1.3/g' "$root/boot/extlinux/extlinux.conf" "$root/boot/boot.cmd"
+mkimage -A arm64 -T script -C none -n 'H728 Trixie v3.1.3 SD' -d "$root/boot/boot.cmd" "$root/boot/boot.scr"
+printf 'VERSION=v3.1.3\nMODE=standalone-sd\nEMMC_INSTALL=experimental-explicit-consent\nWIFI_SDIO_MAX_HZ=24000000\n' >"$root/etc/h728-image-release"
 chroot "$root" dpkg-query -W >"$cache/installed-packages.txt"
 chroot "$root" dpkg --audit
 # Preserve first-login provisioning and remove only identities in the new image.

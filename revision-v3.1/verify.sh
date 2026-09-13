@@ -20,13 +20,19 @@ dd if="$root/boot/boot.scr" bs=1 skip=72 status=none | cmp - "$root/boot/boot.cm
 cmp "$root/usr/lib/linux-image-h728-manjaro/sun55i-h728-x96qpro+.dtb" "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb"
 cmp "$src/h728-diagnostics" "$root/usr/local/sbin/h728-diagnostics"
 cmp "$src/h728-install-emmc" "$root/usr/local/sbin/h728-install-emmc"
-# This entry point is the NEW refusal-only script, not the old destructive tool.
-if chroot "$root" /usr/local/sbin/h728-install-emmc --install; then exit 1; fi
+# Never execute the destructive branch in offline verification.
+chroot "$root" bash -n /usr/local/sbin/h728-install-emmc
+cmp "$src/check-emmc-payload.sh" "$root/usr/local/lib/h728-check-emmc-payload"
 # shellcheck disable=SC2016
 if grep -q '\$report' "$root/usr/local/lib/h728-diagnostics-base"; then exit 1; fi
 chroot "$root" bash -n /usr/local/lib/h728-diagnostics-base
 test -s "$root/etc/h728-image-release"
-grep -qx VERSION=v3.1.1 "$root/etc/h728-image-release"
+grep -qx VERSION=v3.1.3 "$root/etc/h728-image-release"
+grep -qx EMMC_INSTALL=experimental-explicit-consent "$root/etc/h728-image-release"
+bash "$src/check-emmc-payload.sh" "$root/usr/lib/h728/uboot"
+for file in u-boot-sunxi-with-spl-emmc.bin emmc-uboot.config emmc-uboot.dtb source.sha256 recipe.sha256 bundle.sha256; do
+    cmp "/armbian/cache/h728-emmc-build/$file" "$root/usr/lib/h728/uboot/$file"
+done
 test "$(fdtget "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb" /soc/mmc@4021000 max-frequency)" = 24000000
 cp "$root/boot/dtb/allwinner/sun55i-h728-x96qpro+.dtb" "$root/tmp/wifi20.dtb"
 fdtput -t i "$root/tmp/wifi20.dtb" /soc/mmc@4021000 max-frequency 20000000
@@ -41,5 +47,5 @@ for file in "$root/etc/apt/sources.list" "$root/etc/apt/sources.list.d/"*.list "
     test -f "$file" || continue
     if sed '/^[[:space:]]*#/d' "$file" | grep -qi bookworm; then exit 1; fi
 done
-echo 'PASS v3.1: independent SD UUIDs, corrected packaged DTB, loglevel7, bounded diagnostics, eMMC installer blocked, Exim masked.'
+echo 'PASS v3.1.3: SD UUIDs, DTB, boot payload, installer syntax only, Exim masked. eMMC installation NOT executed/tested.'
 echo 'This is offline verification only; v3.1 physical SD boot/peripherals/thermal testing remains required.'

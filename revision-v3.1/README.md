@@ -1,6 +1,33 @@
 # v3.1 full SD image
 
-## Current build target: v3.1.1
+## Current candidate: v3.1.3
+
+User explicitly requested complete eMMC replacement and selected no backup.
+The new installer supports `--check` (default), `--install --no-backup` with
+typed target/CID consent, or `--install --backup-dir /mnt/usb`. It only runs
+from independent SD root/boot and preserves boot0/1 and EXT_CSD. See
+[EMMC-INSTALL.md](EMMC-INSTALL.md) before use. New cache/output and +h728.7
+preserve earlier deliverables. Installer execution is NOT tested offline.
+Earlier v3.1.2/refusal-only descriptions below are historical.
+
+## Current build target: v3.1.2
+
+v3.1.2 stores a freshly source-built eMMC U-Boot under `/usr/lib/h728/uboot`,
+including its config, board DTB, archive/recipe hashes and bundle manifest.
+The proven SD bootloader remains byte-identical; no eMMC writes or installer
+enablement are added. Kernel package revision is +h728.6 (same Image/modules
+and Wi-Fi DTB as +h728.5). Use a new h728-v3.1.2 cache and output filename.
+CI builds the payload from the same checkout before image assembly, verifies
+the pinned archives and recipe, and compares the installed payload byte-for-byte.
+Local builds must stage the payload in `/armbian/cache/h728-emmc-build` and
+the expected source/recipe hashes alongside the scripts as shown in ci/build.sh.
+This new image is not yet hardware-tested. The following v3.1.1 results are
+historical, not a v3.1.2 delivery claim.
+
+Local v3.1.2 image assembly and full read-only verification passed on 2026-09-13.
+The independent `.img`, hash and verification report are under
+`armbian-build/output/images/`; SHA-256 is recorded in MATERIALS.md.
+The new workflow has not yet been run on GitHub; no new Release is claimed.
 
 The scripts in this directory now produce
 `Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1.1_SD.img`, in a separate

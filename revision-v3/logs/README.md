@@ -41,6 +41,11 @@ with the eMMC while the SPL is not. `printenv` gives
 
 ## Reproducing
 
+**Safety update:** the flashing and one-pass commands below are historical
+and now refuse to run before opening a port. Use capture/read-only diagnostics
+only; see `../../tools/serial/README.md`. A successful eMMC boot in the final
+log does not imply Wi-Fi success: it also records AIC firmware upload failure.
+
 The scripts in [`../../tools/serial`](../../tools/serial) produced these logs
 (pyserial; run with the managed venv python):
 

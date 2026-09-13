@@ -6,6 +6,20 @@
 
 ## 当前状态
 
+当前本地候选版为 v3.1.3：用户要求新增完整 SD → eMMC 安装，并明确选择
+不备份。镜像已通过离线校验，安装器默认只检查，只有显式参数和设备/CID
+确认后才清空 eMMC。尚未完成新安装流程的真机测试，不作为正式发行版。
+步骤与发布前测试清单见 [EMMC-INSTALL.md](revision-v3.1/EMMC-INSTALL.md)。
+下方 v3.1.2 的“安装器禁用”描述仅适用于保留的旧版本。
+
+2026-09-13：用户已确认拔 SD 后独立 eMMC 启动，UART 证明从 SPL 到 eMMC
+根系统、千兆网络、登录提示的完整链路。下方旧版状态为历史记录。
+该次日志仍有 AIC Wi-Fi 固件上传失败，不能等同于整机验证完成。
+串口调试中使用过的不安全自动刷写脚本现已停用，见
+[串口工具安全说明](tools/serial/README.md)。新 U-Boot 是独立构建物，
+当前开发版 v3.1.2 已接入其构建和文件打包，但尚未发布；v3.1 安装器
+继续禁用，不改写现有 eMMC。引导器仅存放于镜像 `/usr/lib/h728/uboot`。
+
 最新镜像已发布：[v3.1.1-ci.6.1](https://github.com/jianjunx/armbian_x96q-pro-plus/releases/tag/v3.1.1-ci.6.1)。
 Actions [34678002094](https://github.com/jianjunx/armbian_x96q-pro-plus/actions/runs/34678002094)
 从 `c0c117f` 构建、离线校验并上传全部 8 个文件成功。下载文件名含

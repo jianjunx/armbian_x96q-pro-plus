@@ -1,5 +1,12 @@
 # X96Q Pro+ H728 v3：Trixie + Linux 7.2
 
+> 2026-09-13 审查更新：独立 eMMC 启动已验证，但该次日志的 Wi-Fi 仍失败。
+> 下方安装命令属于历史 v3 流程，不建议复用；v3.1 安装器继续禁用。
+> 两个旧串口自动刷写入口已停用。最终引导器的 SPL 和 U-Boot proper
+> 都采用单块读取（全局 `CONFIG_SYS_MMC_MAX_BLK_COUNT=1`）；早期“仅限 SPL”
+> 的描述不是最终配置。三套构建入口现共享配置并在 olddefconfig 后校验。
+> 具体限制见 [串口安全说明](../tools/serial/README.md)。
+
 本版在独立镜像中将未启动过的 v2 发行底包离线升级到 Debian 13 Trixie，替换为作者提供的 `7.2.0-7-MANJARO-ARM` 内核、模块和设备树，并集成 Wi-Fi 固件、schedutil 调频及 eMMC 安装工具。未读取或迁移用户盒子里的个人数据。
 
 镜像文件：`../armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.img`。
@@ -146,7 +153,7 @@ eMMC 的 `vmmc-supply` 改用板级 `/vcc3v3`（phandle `0x1f`，3.3 V 固定、
 | `dmesg` mmc2 错误 | **无** |
 | eMMC 健康度 | `life_time = 0x04 0x04`（约 30–40% 额定寿命已消耗）、`pre_eol_info = 0x01`（Normal） |
 
-结论：eMMC 写入路径在 DDR52 下稳定，`h728-install-emmc --install` 的写入风险已排除。**未做的**：断电持久性（写后冷启动再读回）测试——当前结论基于 `fsync` + 缓存失效后的读回校验。
+结论：上述有限测试中的读回一致，不能排除安装器误写或长期写入风险。**未做的**：断电持久性（写后冷启动再读回）测试——当前结论基于 `fsync` + 缓存失效后的读回校验。
 
 注意：`userdata` 还原写入只有 23.4 MB/s，慢于首次写入，属 eMMC 内部 GC/写放大现象，正确性已由校验覆盖。
 
