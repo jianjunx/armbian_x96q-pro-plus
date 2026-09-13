@@ -1,0 +1,315 @@
+
+
+===== pass 1: diagnosis from the SD card boot (14:49:07) =====
+=== at U-Boot prompt ===
+
+### version
+version
+U-Boot 2025.01-1 (Aug 31 2026 - 01:28:57 +0000) Manjaro Linux ARM
+
+=>
+
+### mmc dev 1
+mmc dev 1
+switch to partitions #0, OK
+mmc1(part 0) is current device
+=>
+
+### mmc info
+mmc info
+Device: mmc@4022000
+Manufacturer ID: 15
+OEM: 0
+Name: CJNB4R 
+Bus Speed: 26000000
+Mode: MMC High Speed (26MHz)
+Rd Block Len: 512
+MMC version 5.1
+High Capacity: Yes
+Capacity: 58.2 GiB
+Bus Width: 1-bit
+Erase Group Size: 512 KiB
+HC WP Group Size: 8 MiB
+User Capacity: 58.2 GiB WRREL
+Boot Capacity: 4 MiB ENH
+RPMB Capacity: 4 MiB ENH
+Boot area 0 is not write protected
+Boot area 1 is not write protected
+=>
+
+### mmc part
+mmc part
+
+Partition Map for mmc device 1  --   Partition Type: DOS
+
+Part	Start Sector	Num Sectors	UUID		Type
+  1	8192      	1048576   	71246cda-01	0c Boot
+  2	1056768   	121085952 	71246cda-02	83
+=>
+
+### mmc read 0x42000000 0x50 0x8
+mmc read 0x42000000 0x50 0x8
+MMC read: dev # 1, block # 80, count 8 ... 8 blocks read: OK
+=>
+
+### md.b 0x42000000 0x40
+md.b 0x42000000 0x40
+42000000: 1f 08 00 71 00 00 88 52 94 32 80 1a 00 00 80 d2  ...q...R.2......
+42000010: 43 f3 ff 97 f6 03 00 aa 60 1a 40 f9 17 38 40 b9  C.......`.@..8@.
+42000020: bf 3f 03 d5 e0 03 16 aa 3d f3 ff 97 1f e0 01 f1  .?......=.......
+42000030: c8 09 00 54 ff 02 18 6a 81 09 00 54 9f 02 17 6a  ...T...j...T...j
+=>
+
+----- multi-block read sweep on eMMC (sector 0x10) -----
+
+### mmc read 0x42000000 0x10 0x1
+mmc read 0x42000000 0x10 0x1
+MMC read: dev # 1, block # 16, count 1 ... 1 blocks read: OK
+=>
+  sweep     1: ok
+
+### mmc read 0x42000000 0x10 0x2
+mmc read 0x42000000 0x10 0x2
+MMC read: dev # 1, block # 16, count 2 ... 2 blocks read: OK
+=>
+  sweep     2: ok
+
+### mmc read 0x42000000 0x10 0x8
+mmc read 0x42000000 0x10 0x8
+MMC read: dev # 1, block # 16, count 8 ... 8 blocks read: OK
+=>
+  sweep     8: ok
+
+### mmc read 0x42000000 0x10 0x10
+mmc read 0x42000000 0x10 0x10
+MMC read: dev # 1, block # 16, count 16 ... 16 blocks read: OK
+=>
+  sweep    16: ok
+
+### mmc read 0x42000000 0x10 0x40
+mmc read 0x42000000 0x10 0x40
+MMC read: dev # 1, block # 16, count 64 ... 64 blocks read: OK
+=>
+  sweep    64: ok
+
+### mmc read 0x42000000 0x10 0x80
+mmc read 0x42000000 0x10 0x80
+MMC read: dev # 1, block # 16, count 128 ... 128 blocks read: OK
+=>
+  sweep   128: ok
+
+### mmc read 0x42000000 0x10 0x200
+mmc read 0x42000000 0x10 0x200
+MMC read: dev # 1, block # 16, count 512 ... 512 blocks read: OK
+=>
+  sweep   512: ok
+
+### mmc read 0x42000000 0x10 0x5d2
+mmc read 0x42000000 0x10 0x5d2
+MMC read: dev # 1, block # 16, count 1490 ... 1490 blocks read: OK
+=>
+  sweep  1490: ok
+
+### printenv bootcmd bootargs boot_targets boot_prefixes
+printenv bootcmd bootargs boot_targets boot_prefixes
+bootcmd=run distro_bootcmd
+## Error: "bootargs" not defined
+boot_targets=fel mmc0 usb0 pxe dhcp 
+boot_prefixes=/ /boot/
+=>
+
+
+===== pass 1: flashing the new blob (14:50:53) =====
+
+### mmc dev 0
+mmc dev 0
+switch to partitions #0, OK
+mmc0 is current device
+=>
+
+### fatls mmc 0:1 /
+fatls mmc 0:1 /
+            dtb/
+   230454   boot.bmp
+        0   .next
+ 32614912   Image
+ 21210322   uInitrd
+      859   boot.cmd
+     1485   H728-README.txt
+            h728-logs/
+      266   armbianEnv.txt
+      931   boot.scr
+            h728-wifi-clock12-v1-recovery/
+            extlinux/
+    62999   h728-diagnostics.txt
+            h728-wifi-clock20-v1-recovery/
+ 32614912   vmlinuz-7.2.0-7-MANJARO-ARM
+   271985   config-7.2.0-7-MANJARO-ARM
+            h728-wifi-clock40-v1-recovery/
+ 21210258   initrd.img-7.2.0-7-MANJARO-ARM
+            h728-wifi-clock24-v1-recovery/
+            System Volume Information/
+   803681   u-boot-sunxi-with-spl-emmc.bin
+
+13 file(s), 8 dir(s)
+
+=>
+
+### fatload mmc 0:1 0x42000000 /u-boot-sunxi-with-spl-emmc.bin
+fatload mmc 0:1 0x42000000 /u-boot-sunxi-with-spl-emmc.bin
+803681 bytes read in 36 ms (21.3 MiB/s)
+=>
+
+[ok] loaded 803681 bytes -> 1570 sectors
+
+### mmc dev 1
+mmc dev 1
+switch to partitions #0, OK
+mmc1(part 0) is current device
+=>
+
+### mmc write 0x42000000 0x10 0x622
+mmc write 0x42000000 0x10 0x622
+MMC write: dev # 1, block # 16, count 1570 ... 1570 blocks written: OK
+=>
+
+### mmc read 0x50000000 0x10 0x622
+mmc read 0x50000000 0x10 0x622
+MMC read: dev # 1, block # 16, count 1570 ... 1570 blocks read: OK
+=>
+
+### cmp.b 0x42000000 0x50000000 0xc4361
+cmp.b 0x42000000 0x50000000 0xc4361
+Total of 803681 byte(s) were the same
+=>
+
+[ok] read-back comparison
+
+
+===== pass 2: cold boot from eMMC (14:51:05) =====
+>>> power off, REMOVE the SD card, power on. Capturing for 240 s.
+
+
+----- pass 2 summary -----
+  SPL banner                      : 0
+  multi-block read failed         : 0
+  single-block fallback recovered : 0
+  single-block read failed        : 0
+  SPL block read error            : 0
+  U-Boot proper reached           : 0
+  kernel started                  : 0
+
+
+===== pass 1: diagnosis from the SD card boot (15:15:49) =====
+=== at U-Boot prompt ===
+
+### mmc dev 1
+mmc dev 1
+switch to partitions #0, OK
+mmc1(part 0) is current device
+=>
+
+### mmc info
+mmc info
+Device: mmc@4022000
+Manufacturer ID: 15
+OEM: 0
+Name: CJNB4R 
+Bus Speed: 26000000
+Mode: MMC High Speed (26MHz)
+Rd Block Len: 512
+MMC version 5.1
+High Capacity: Yes
+Capacity: 58.2 GiB
+Bus Width: 1-bit
+Erase Group Size: 512 KiB
+HC WP Group Size: 8 MiB
+User Capacity: 58.2 GiB WRREL
+Boot Capacity: 4 MiB ENH
+RPMB Capacity: 4 MiB ENH
+Boot area 0 is not write protected
+Boot area 1 is not write protected
+=>
+
+----- multi-block read sweep on eMMC (sector 0x10) -----
+
+
+===== pass 1: flashing the new blob (15:17:20) =====
+
+### mmc dev 0
+mmc dev 0
+switch to partitions #0, OK
+mmc0 is current device
+=>
+
+### fatls mmc 0:1 /
+fatls mmc 0:1 /
+            dtb/
+   230454   boot.bmp
+        0   .next
+ 32614912   Image
+ 21210322   uInitrd
+      859   boot.cmd
+     1485   H728-README.txt
+            h728-logs/
+      266   armbianEnv.txt
+      931   boot.scr
+            h728-wifi-clock12-v1-recovery/
+            extlinux/
+    62999   h728-diagnostics.txt
+            h728-wifi-clock20-v1-recovery/
+ 32614912   vmlinuz-7.2.0-7-MANJARO-ARM
+   271985   config-7.2.0-7-MANJARO-ARM
+            h728-wifi-clock40-v1-recovery/
+ 21210258   initrd.img-7.2.0-7-MANJARO-ARM
+            h728-wifi-clock24-v1-recovery/
+            System Volume Information/
+   773113   u-boot-sunxi-with-spl-emmc.bin
+
+13 file(s), 8 dir(s)
+
+=>
+
+### fatload mmc 0:1 0x42000000 /u-boot-sunxi-with-spl-emmc.bin
+fatload mmc 0:1 0x42000000 /u-boot-sunxi-with-spl-emmc.bin
+773113 bytes read in 34 ms (21.7 MiB/s)
+=>
+
+[ok] loaded 773113 bytes -> 1510 sectors
+
+### mmc dev 1
+mmc dev 1
+switch to partitions #0, OK
+mmc1(part 0) is current device
+=>
+
+### mmc write 0x42000000 0x10 0x5e6
+mmc write 0x42000000 0x10 0x5e6
+MMC write: dev # 1, block # 16, count 1510 ... 1510 blocks written: OK
+=>
+
+### mmc read 0x50000000 0x10 0x5e6
+mmc read 0x50000000 0x10 0x5e6
+MMC read: dev # 1, block # 16, count 1510 ... 1510 blocks read: OK
+=>
+
+### cmp.b 0x42000000 0x50000000 0xbcbf9
+cmp.b 0x42000000 0x50000000 0xbcbf9
+Total of 773113 byte(s) were the same
+=>
+
+[ok] read-back comparison
+
+
+===== pass 2: cold boot from eMMC (15:17:34) =====
+>>> power off, REMOVE the SD card, power on. Capturing for 420 s.
+
+
+----- pass 2 summary -----
+  SPL banner                      : 0
+  multi-block read failed         : 0
+  single-block fallback recovered : 0
+  single-block read failed        : 0
+  SPL block read error            : 0
+  U-Boot proper reached           : 0
+  kernel started                  : 0

@@ -1,0 +1,904 @@
+# SPL instrumented cold boot — key lines
+#
+# Source: h728-serial.txt capture 15:00:29 (2.6 MB, 77,665 H728DBG lines).
+# The repetitive per-block instrumentation is summarised below; every
+# non-instrumented line is kept verbatim, in order.
+#
+## Instrumented line histogram (unique patterns x count)
+
+  38848 HNDBG cmd=N blks=N bs=N bc=N
+  38759 HNDBG pio words=N tmo=N
+     20 HNDBG bread fail start=N cur=N
+     19 HNDBG bread recovered
+     18 HNDBG ios bw=N clk=N
+      1 HNDBG pio words=N
+
+## boot outcome counters
+
+bread fail                   20
+bread recovered              19
+single fail                  0
+ios bw=1 clk=26000000        3
+mmc block read error         0
+
+## transcript (instrumentation removed)
+
+===== capture start 15:00:29 =====
+
+U-Boot SPL 2025.01-h728-emmc-v3 (Sep 13 2026 - 06:48:37 +0000)
+DRAM: 4096 MiB
+size=30, ptr=30, limit=100000: 4fd00000
+Trying to boot from MMC2
+boot_device=2, mmc_dev=1
+size=200, ptr=230, limit=100000: 4fd00030
+size=200, ptr=430, limit=100000: 4fd00230
+size=200, ptr=630, limit=100000: 4fd00430
+size=ba400, ptr=baa40, limit=100000: aligned to 4fd00640
+- done loading
+- done loading
+- done loading
+NOTICE:  BL31: v2.12.0(release):
+NOTICE:  BL31: Built : 06:48:34, Sep 13 2026
+NOTICE:  BL31: Detected Allwinner A523 SoC (1890)
+NOTICE:  BL31: Found U-Boot DTB at 0xa0ad180, model: X96QPro+
+l: false
+Skipping device pre-relocation
+bind node interrupt-controller@7010320
+   - attempt to match compatible string 'allwinner,sun55i-a523-nmi'
+No match for node 'interrupt-controller@7010320'
+bind node pinctrl@7022000
+   - attempt to match compatible string 'allwinner,sun55i-a523-r-pinctrl'
+ofnode_read_bool: bootph-all: false
+ofnode_read_bool: bootph-some-ram: false
+ofnode_read_bool: bootph-pre-ram: false
+ofnode_read_bool: bootph-pre-sram: false
+ofnode_read_bool: u-boot,dm-pre-reloc: false
+ofnode_read_bool: u-boot,dm-pre-proper: false
+ofnode_read_bool: u-boot,dm-spl: false
+ofnode_read_bool: u-boot,dm-tpl: false
+ofnode_read_bool: u-boot,dm-vpl: false
+Skipping device pre-relocation
+bind node i2c@7081400
+   - attempt to match compatible string 'allwinner,sun55i-a523-i2c'
+   - attempt to match compatible string 'allwinner,sun8i-v536-i2c'
+   - attempt to match compatible string 'allwinner,sun6i-a31-i2c'
+ofnode_read_bool: bootph-all: false
+ofnode_read_bool: bootph-some-ram: false
+ofnode_read_bool: bootph-pre-ram: false
+ofnode_read_bool: bootph-pre-sram: false
+ofnode_read_bool: u-boot,dm-pre-reloc: false
+ofnode_read_bool: u-boot,dm-pre-proper: false
+ofnode_read_bool: u-boot,dm-spl: false
+ofnode_read_bool: u-boot,dm-tpl: false
+ofnode_read_bool: u-boot,dm-vpl: false
+Skipping device pre-relocation
+bind node rtc@7090000
+   - attempt to match compatible string 'allwinner,sun55i-a523-rtc'
+   - attempt to match compatible string 'allwinner,sun50i-r329-rtc'
+ofnode_read_bool: bootph-all: false
+ofnode_read_bool: bootph-some-ram: false
+ofnode_read_bool: bootph-pre-ram: false
+ofnode_read_bool: bootph-pre-sram: false
+ofnode_read_bool: u-boot,dm-pre-reloc: false
+ofnode_read_bool: u-boot,dm-pre-proper: false
+ofnode_read_bool: u-boot,dm-spl: false
+ofnode_read_bool: u-boot,dm-tpl: false
+ofnode_read_bool: u-boot,dm-vpl: false
+Skipping device pre-relocation
+bind node aliases
+Device 'aliases' has no compatible string
+bind node chosen
+Device 'chosen' has no compatible string
+bind node vcc5v
+   - attempt to match compatible string 'regulator-fixed'
+ofnode_read_bool: bootph-all: false
+ofnode_read_bool: bootph-some-ram: false
+ofnode_read_bool: bootph-pre-ram: false
+ofnode_read_bool: bootph-pre-sram: false
+ofnode_read_bool: u-boot,dm-pre-reloc: false
+ofnode_read_bool: u-boot,dm-pre-proper: false
+ofnode_read_bool: u-boot,dm-spl: false
+ofnode_read_bool: u-boot,dm-tpl: false
+ofnode_read_bool: u-boot,dm-vpl: false
+Skipping device pre-relocation
+bind node vcc3v3
+   - attempt to match compatible string 'regulator-fixed'
+ofnode_read_bool: bootph-all: false
+ofnode_read_bool: bootph-some-ram: false
+ofnode_read_bool: bootph-pre-ram: false
+ofnode_read_bool: bootph-pre-sram: false
+ofnode_read_bool: u-boot,dm-pre-reloc: false
+ofnode_read_bool: u-boot,dm-pre-proper: false
+ofnode_read_bool: u-boot,dm-spl: false
+ofnode_read_bool: u-boot,dm-tpl: false
+ofnode_read_bool: u-boot,dm-vpl: false
+Skipping device pre-relocation
+bind node binman
+Device 'binman' has no compatible string
+bind node __symbols__
+Device '__symbols__' has no compatible string
+size=30, ptr=3c8, limit=2000: 4a208
+bind node serial@2500000
+   - attempt to match compatible string 'snps,dw-apb-uart'
+   - found match at driver 'ns16550_serial' for 'snps,dw-apb-uart'
+size=98, ptr=460, limit=2000: 4a238
+   - seq=0
+size=28, ptr=488, limit=2000: 4a2d0
+size=20, ptr=4a8, limit=2000: 4a2f8
+size=8, ptr=4b0, limit=2000: 4a318
+ofnode_read_u32_index: reg-offset: (not found)
+ofnode_read_u32_index: reg-shift: 0x2 (2)
+ofnode_read_u32_index: reg-io-width: 0x4 (4)
+ofnode_read_u32_index: clock-frequency: (not found)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: (none) (ret=-19)
+   - result for clock@2001000: (none) (ret=-19)
+size=30, ptr=4e0, limit=2000: 4a320
+ns16550_serial serial@2500000: pinctrl_select_state_full: uclass_get_device_by_phandle_id: err=-19
+size=40, ptr=550, limit=2000: aligned to 4a380
+Looking for clock@2001000
+Looking for clock@2001000
+size=30, ptr=580, limit=2000: 4a3c0
+   - result for clock@2001000: (none) (ret=-19)
+   - result for clock@2001000: (none) (ret=-19)
+
+
+U-Boot 2025.01-h728-emmc-v3 (Sep 13 2026 - 06:48:37 +0000) H728 eMMC v3
+
+size=30, ptr=5b0, limit=2000: 4a3f0
+CPU:   Allwinner A523 (SUN55I)
+Model: X96QPro+
+DRAM:  4 GiB
+ofnode_read_prop: assigned-clock-rates: <not found>
+bind node cpus
+Device 'cpus' has no compatible string
+bind node osc24M-clk
+   - attempt to match compatible string 'fixed-clock'
+   - found match at driver 'fixed_clock' for 'fixed-clock'
+bind node pmu
+   - attempt to match compatible string 'arm,cortex-a55-pmu'
+No match for node 'pmu'
+bind node psci
+   - attempt to match compatible string 'arm,psci-0.2'
+   - found match at driver 'psci' for 'arm,psci-0.2'
+Cannot find driver 'psci-sysreset'
+bind node timer
+   - attempt to match compatible string 'arm,armv8-timer'
+No match for node 'timer'
+bind node soc
+   - attempt to match compatible string 'simple-bus'
+   - found match at driver 'simple_bus' for 'simple-bus'
+ofnode_read_u32_array: ranges: bind node pinctrl@2000000
+   - attempt to match compatible string 'allwinner,sun55i-a523-pinctrl'
+   - found match at driver 'sunxi-pinctrl' for 'allwinner,sun55i-a523-pinctrl'
+ofnode_read_bool: gpio-controller: false
+ofnode_read_bool: gpio-controller: false
+ofnode_read_bool: gpio-controller: false
+ofnode_read_bool: gpio-controller: false
+bind node clock@2001000
+   - attempt to match compatible string 'allwinner,sun55i-a523-ccu'
+   - found match at driver 'sunxi_clk' for 'allwinner,sun55i-a523-ccu'
+bind node mmc@4020000
+   - attempt to match compatible string 'allwinner,sun55i-a523-mmc'
+   - attempt to match compatible string 'allwinner,sun20i-d1-mmc'
+   - found match at driver 'sunxi_mmc' for 'allwinner,sun20i-d1-mmc'
+   - seq=0
+bind node mmc@4022000
+   - attempt to match compatible string 'allwinner,sun55i-a523-mmc'
+   - attempt to match compatible string 'allwinner,sun20i-d1-mmc'
+   - found match at driver 'sunxi_mmc' for 'allwinner,sun20i-d1-mmc'
+   - seq=1
+bind node watchdog@2050000
+   - attempt to match compatible string 'allwinner,sun55i-a523-wdt'
+   - found match at driver 'sunxi_wdt' for 'allwinner,sun55i-a523-wdt'
+bind node serial@2500000
+   - attempt to match compatible string 'snps,dw-apb-uart'
+   - found match at driver 'ns16550_serial' for 'snps,dw-apb-uart'
+   - seq=0
+bind node interrupt-controller@3400000
+   - attempt to match compatible string 'arm,gic-v3'
+No match for node 'interrupt-controller@3400000'
+bind node usb@4100000
+   - attempt to match compatible string 'allwinner,sun55i-a523-musb'
+   - attempt to match compatible string 'allwinner,sun8i-a33-musb'
+No match for node 'usb@4100000'
+bind node phy@4100400
+   - attempt to match compatible string 'allwinner,sun55i-a523-usb-phy'
+   - attempt to match compatible string 'allwinner,sun20i-d1-usb-phy'
+   - found match at driver 'sun4i_usb_phy' for 'allwinner,sun20i-d1-usb-phy'
+bind node usb@4101000
+   - attempt to match compatible string 'allwinner,sun55i-a523-ehci'
+   - attempt to match compatible string 'generic-ehci'
+   - found match at driver 'ehci_generic' for 'generic-ehci'
+bind node usb@4101400
+   - attempt to match compatible string 'allwinner,sun55i-a523-ohci'
+   - attempt to match compatible string 'generic-ohci'
+   - found match at driver 'ohci_generic' for 'generic-ohci'
+bind node usb@4200000
+   - attempt to match compatible string 'allwinner,sun55i-a523-ehci'
+   - attempt to match compatible string 'generic-ehci'
+   - found match at driver 'ehci_generic' for 'generic-ehci'
+bind node usb@4200400
+   - attempt to match compatible string 'allwinner,sun55i-a523-ohci'
+   - attempt to match compatible string 'generic-ohci'
+   - found match at driver 'ohci_generic' for 'generic-ohci'
+bind node clock-controller@7010000
+   - attempt to match compatible string 'allwinner,sun55i-a523-r-ccu'
+   - found match at driver 'sunxi_clk' for 'allwinner,sun55i-a523-r-ccu'
+bind node interrupt-controller@7010320
+   - attempt to match compatible string 'allwinner,sun55i-a523-nmi'
+No match for node 'interrupt-controller@7010320'
+bind node pinctrl@7022000
+   - attempt to match compatible string 'allwinner,sun55i-a523-r-pinctrl'
+   - found match at driver 'sunxi-pinctrl' for 'allwinner,sun55i-a523-r-pinctrl'
+ofnode_read_bool: gpio-controller: false
+bind node i2c@7081400
+   - attempt to match compatible string 'allwinner,sun55i-a523-i2c'
+   - attempt to match compatible string 'allwinner,sun8i-v536-i2c'
+   - attempt to match compatible string 'allwinner,sun6i-a31-i2c'
+   - found match at driver 'i2c_mvtwsi' for 'allwinner,sun6i-a31-i2c'
+bind node pmic@34
+   - attempt to match compatible string 'x-powers,axp717'
+   - found match at driver 'axp_pmic' for 'x-powers,axp717'
+ofnode_read_u32_index: u-boot,i2c-offset-len: (not found)
+ofnode_read_u32_index: reg: 0x34 (52)
+bind node regulators
+Device 'regulators' has no compatible string
+ofnode_find_subnode: regulators: regulators
+ofnode_read_prop: regulator-name: vdd-cpul
+ofnode_read_prop: regulator-name: vdd-cpul
+ofnode_read_prop: regulator-name: vdd-cpul
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vdd-cpul
+ofnode_read_prop: regulator-name: vdd-gpu-sys
+ofnode_read_prop: regulator-name: vdd-gpu-sys
+ofnode_read_prop: regulator-name: vdd-gpu-sys
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vdd-gpu-sys
+ofnode_read_prop: regulator-name: vdd-dram
+ofnode_read_prop: regulator-name: vdd-dram
+ofnode_read_prop: regulator-name: vdd-dram
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vdd-dram
+ofnode_read_prop: regulator-name: vdd-dcdc4
+ofnode_read_prop: regulator-name: vdd-dcdc4
+ofnode_read_prop: regulator-name: vdd-dcdc4
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vdd-dcdc4
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: <not found>
+axp_regulator aldo1: has no property 'regulator-name'
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: <not found>
+axp_regulator aldo2: has no property 'regulator-name'
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-aldo3
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-pll-dxco-avcc
+ofnode_read_prop: regulator-name: vcc-pg-wifi-lvds
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-pg-wifi-lvds
+ofnode_read_prop: regulator-name: vcc-dram-1v8
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-dram-1v8
+ofnode_read_prop: regulator-name: vcc-bldo3
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-bldo3
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: <not found>
+axp_regulator bldo4: has no property 'regulator-name'
+ofnode_read_prop: regulator-name: vcc-codec-sd
+ofnode_read_prop: regulator-name: vcc-codec-sd
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-codec-sd
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: <not found>
+axp_regulator cldo2: has no property 'regulator-name'
+ofnode_read_prop: regulator-name: vcc-codec-eth-sd
+ofnode_read_prop: regulator-name: vcc-codec-eth-sd
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-codec-eth-sd
+ofnode_read_prop: regulator-name: vcc-eth-phy
+ofnode_read_prop: regulator-name: vcc-eth-phy
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-eth-phy
+ofnode_read_prop: regulator-name: vdd-cpus
+ofnode_read_prop: regulator-name: vdd-cpus
+ofnode_read_prop: regulator-name: vdd-cpus
+ofnode_read_prop: regulator-name: vdd-cpus
+ofnode_read_prop: regulator-name: vdd-cpus
+ofnode_read_prop: regulator-name: vdd-cpus
+ofnode_read_prop: regulator-name: vdd-cpus
+ofnode_read_prop: regulator-name: vdd-cpus
+ofnode_read_prop: regulator-name: vdd-cpus
+bind node pmic@36
+   - attempt to match compatible string 'x-powers,axp323'
+   - found match at driver 'axp_pmic' for 'x-powers,axp323'
+ofnode_read_u32_index: u-boot,i2c-offset-len: (not found)
+ofnode_read_u32_index: reg: 0x36 (54)
+bind node regulators
+Device 'regulators' has no compatible string
+ofnode_find_subnode: regulators: regulators
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: <not found>
+axp_regulator aldo1: has no property 'regulator-name'
+axp_regulator aldo1: 'regulator-name' has nonunique value: 'aldo1
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_prop: regulator-name: <not found>
+ofnode_read_bool: regulator-always-on: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: <not found>
+axp_regulator dldo1: has no property 'regulator-name'
+ofnode_read_prop: regulator-name: vdd-cpub
+ofnode_read_prop: regulator-name: vdd-cpub
+ofnode_read_prop: regulator-name: vdd-cpub
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vdd-cpub
+ofnode_read_prop: regulator-name: vdd-dcdc3
+ofnode_read_prop: regulator-name: vdd-dcdc3
+ofnode_read_prop: regulator-name: vdd-dcdc3
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vdd-dcdc3
+bind node rtc@7090000
+   - attempt to match compatible string 'allwinner,sun55i-a523-rtc'
+   - attempt to match compatible string 'allwinner,sun50i-r329-rtc'
+   - found match at driver 'clk_sun6i_rtc' for 'allwinner,sun50i-r329-rtc'
+bind node aliases
+Device 'aliases' has no compatible string
+bind node chosen
+Device 'chosen' has no compatible string
+bind node vcc5v
+   - attempt to match compatible string 'regulator-fixed'
+   - found match at driver 'regulator_fixed' for 'regulator-fixed'
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-5v
+bind node vcc3v3
+   - attempt to match compatible string 'regulator-fixed'
+   - found match at driver 'regulator_fixed' for 'regulator-fixed'
+ofnode_read_bool: regulator-always-on: true
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_prop: regulator-name: vcc-3v3
+bind node binman
+Device 'binman' has no compatible string
+bind node __symbols__
+Device '__symbols__' has no compatible string
+ofnode_read_u32_index: clock-frequency: (not found)
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock-controller@7010000
+Looking for clock-controller@7010000
+   - result for clock-controller@7010000: clock-controller@7010000 (ret=0)
+   - result for clock-controller@7010000: clock-controller@7010000 (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for osc24M-clk
+Looking for osc24M-clk
+   - result for osc24M-clk: osc24M-clk (ret=0)
+   - result for osc24M-clk: osc24M-clk (ret=0)
+ofnode_read_u32_index: clock-frequency: 0x16e3600 (24000000)
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for rtc@7090000
+Looking for rtc@7090000
+   - result for rtc@7090000: rtc@7090000 (ret=0)
+   - result for rtc@7090000: rtc@7090000 (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for rtc@7090000
+Looking for rtc@7090000
+   - result for rtc@7090000: rtc@7090000 (ret=0)
+   - result for rtc@7090000: rtc@7090000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for osc24M-clk
+Looking for osc24M-clk
+   - result for osc24M-clk: osc24M-clk (ret=0)
+   - result for osc24M-clk: osc24M-clk (ret=0)
+Looking for rtc@7090000
+Looking for rtc@7090000
+   - result for rtc@7090000: rtc@7090000 (ret=0)
+   - result for rtc@7090000: rtc@7090000 (ret=0)
+Looking for rtc@7090000
+Looking for rtc@7090000
+   - result for rtc@7090000: rtc@7090000 (ret=0)
+   - result for rtc@7090000: rtc@7090000 (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+sunxi_set_gate: (CLK#32) unhandled
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_prop: assigned-clock-rates: <not found>
+i2c_mvtwsi i2c@7081400: pinctrl_select_state_full: pinctrl_config_one: err=-2
+ofnode_read_u32_index: u-boot,i2c-transaction-bytes: (not found)
+ofnode_read_u32_index: u-boot,i2c-transaction-bytes: (not found)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock-controller@7010000
+Looking for clock-controller@7010000
+   - result for clock-controller@7010000: reset (ret=0)
+   - result for clock-controller@7010000: reset (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock-controller@7010000
+Looking for clock-controller@7010000
+   - result for clock-controller@7010000: clock-controller@7010000 (ret=0)
+   - result for clock-controller@7010000: clock-controller@7010000 (ret=0)
+ofnode_read_u32_index: clock-frequency: (not found)
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0xdbba0 (900000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x11b340 (1160000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0xe09c0 (920000)
+ofnode_read_u32_index: regulator-max-microvolt: 0xe09c0 (920000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0x14c080 (1360000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x14c080 (1360000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0x325aa0 (3300000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x325aa0 (3300000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0x1b7740 (1800000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x1b7740 (1800000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0x1b7740 (1800000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x1b7740 (1800000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0x1b7740 (1800000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x1b7740 (1800000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0xdbba0 (900000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x11b340 (1160000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: regulator-min-microvolt: 0x100590 (1050000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x100590 (1050000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_bool: gpios: false
+ofnode_read_bool: enable-active-high: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_u32_index: startup-delay-us: (not found)
+ofnode_read_u32_index: off-on-delay-us: (not found)
+ofnode_read_u32_index: u-boot,off-on-delay-us: (not found)
+ofnode_read_u32_index: regulator-min-microvolt: 0x4c4b40 (5000000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x4c4b40 (5000000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_bool: gpios: false
+ofnode_read_bool: enable-active-high: false
+ofnode_read_bool: regulator-boot-on: false
+ofnode_read_u32_index: startup-delay-us: (not found)
+ofnode_read_u32_index: off-on-delay-us: (not found)
+ofnode_read_u32_index: u-boot,off-on-delay-us: (not found)
+ofnode_read_u32_index: regulator-min-microvolt: 0x325aa0 (3300000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x325aa0 (3300000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_bool: multiple-images: true
+binman: Selected image node 'u-boot-sunxi-with-spl'
+ofnode_read_u32_index: reg-offset: (not found)
+ofnode_read_u32_index: reg-shift: 0x2 (2)
+ofnode_read_u32_index: reg-io-width: 0x4 (4)
+ofnode_read_u32_index: clock-frequency: (not found)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Core:  76 devices, 21 uclasses, devicetree: separate
+ofnode_read_u32_index: timeout-sec: (not found)
+ofnode_read_u32_index: hw_margin_ms: (not found)
+ofnode_read_bool: u-boot,noautostart: false
+ofnode_read_bool: u-boot,autostart: false
+ofnode_read_prop: assigned-clock-rates: <not found>
+WDT:   Not starting watchdog@2050000
+Initializing EFI driver framework
+Adding EFI driver 'EFI block driver'
+MMC:   0
+   - 0 'mmc@4020000'
+   - found
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: bus-width: 0x4 (4)
+ofnode_read_u32_index: max-frequency: 0x8f0d180 (150000000)
+ofnode_read_bool: cap-sd-highspeed: true
+ofnode_read_bool: cap-mmc-highspeed: true
+ofnode_read_bool: sd-uhs-sdr12: false
+ofnode_read_bool: sd-uhs-sdr25: false
+ofnode_read_bool: sd-uhs-sdr50: false
+ofnode_read_bool: sd-uhs-sdr104: false
+ofnode_read_bool: sd-uhs-ddr50: false
+ofnode_read_bool: mmc-ddr-1_8v: false
+ofnode_read_bool: mmc-ddr-1_2v: false
+ofnode_read_bool: mmc-hs200-1_8v: false
+ofnode_read_bool: mmc-hs200-1_2v: false
+ofnode_read_bool: mmc-hs400-1_8v: false
+ofnode_read_bool: mmc-hs400-1_2v: false
+ofnode_read_bool: mmc-hs400-enhanced-strobe: false
+ofnode_read_bool: no-mmc-hs400: false
+ofnode_read_bool: non-removable: false
+ofnode_read_bool: cd-inverted: false
+ofnode_read_bool: broken-cd: false
+ofnode_read_bool: no-1-8-v: false
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+Looking for pinctrl@2000000
+Looking for pinctrl@2000000
+   - result for pinctrl@2000000: pinctrl@2000000 (ret=0)
+   - result for pinctrl@2000000: pinctrl@2000000 (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+check_dir_flags: flags 0x18c has GPIOD_PULL_UP and GPIOD_PULL_DOWN
+gpio_sunxi PF: PF error: set_dir_flags for gpio PF6 has invalid dir flags 0x18c
+Sending event 5/(unknown) to spy 'efi_disk add'
+1
+   - 0 'mmc@4020000'
+   - 1 'mmc@4022000'
+   - found
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: bus-width: 0x1 (1)
+ofnode_read_u32_index: max-frequency: 0x18cba80 (26000000)
+ofnode_read_bool: cap-sd-highspeed: true
+ofnode_read_bool: cap-mmc-highspeed: true
+ofnode_read_bool: sd-uhs-sdr12: false
+ofnode_read_bool: sd-uhs-sdr25: false
+ofnode_read_bool: sd-uhs-sdr50: false
+ofnode_read_bool: sd-uhs-sdr104: false
+ofnode_read_bool: sd-uhs-ddr50: false
+ofnode_read_bool: mmc-ddr-1_8v: false
+ofnode_read_bool: mmc-ddr-1_2v: false
+ofnode_read_bool: mmc-hs200-1_8v: false
+ofnode_read_bool: mmc-hs200-1_2v: false
+ofnode_read_bool: mmc-hs400-1_8v: false
+ofnode_read_bool: mmc-hs400-1_2v: false
+ofnode_read_bool: mmc-hs400-enhanced-strobe: false
+ofnode_read_bool: no-mmc-hs400: false
+ofnode_read_bool: non-removable: true
+ofnode_read_bool: no-1-8-v: false
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+Sending event 5/(unknown) to spy 'efi_disk add'
+2
+   - 0 'mmc@4020000'
+   - 1 'mmc@4022000'
+   - not found
+mmc@4020000: 0, mmc@4022000: 1
+Loading Environment from FAT... ofnode_read_u32_index: vmmc-supply: 0x5 (5)
+ofnode_read_u32_index: regulator-min-microvolt: 0x325aa0 (3300000)
+ofnode_read_u32_index: regulator-max-microvolt: 0x325aa0 (3300000)
+ofnode_read_u32_index: regulator-init-microvolt: (not found)
+ofnode_read_u32_index: regulator-min-microamp: (not found)
+ofnode_read_u32_index: regulator-max-microamp: (not found)
+ofnode_read_u32_index: regulator-ramp-delay: (not found)
+ofnode_read_bool: regulator-force-boot-off: false
+ofnode_find_subnode: regulator-state-mem: <none>
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_u32_index: vqmmc-supply: 0x6 (6)
+Signature aa55 valid
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+ <2, 0, 1024>
+ <8, 0, 64>
+ <8520, 256, 128>
+FAT read(sect=2080), clust_size=8, read_size=8
+Unable to read "uboot.env" from mmc1:1... 
+In:    serial@2500000
+Out:   serial@2500000
+Err:   serial@2500000
+Net:   No ethernet found.
+Sending event b/(unknown) to spy '?'
+ofnode_find_subnode: bios: <none>
+smbios_version = 00000000fbf28041: '2025.01-h728-emmc-v3'
+ofnode_find_subnode: system: <none>
+ofnode_read_prop: compatible: foo,x96q-pro-plus
+ofnode_read_prop: model: X96QPro+
+ofnode_find_subnode: baseboard: <none>
+ofnode_read_prop: compatible: foo,x96q-pro-plus
+ofnode_read_prop: model: X96QPro+
+ofnode_find_subnode: chassis: <none>
+ofnode_find_subnode: processor: <none>
+SMBIOS tables written to fbf28000
+starting USB...
+Bus usb@4101000: ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+ofnode_read_u32_index: vbus-supply: (not found)
+Looking for phy@4100400
+Looking for phy@4100400
+   - result for phy@4100400: phy@4100400 (ret=0)
+   - result for phy@4100400: phy@4100400 (ret=0)
+ofnode_read_prop: assigned-clock-rates: <not found>
+ofnode_read_u32_index: usb0_vbus_power-supply: (not found)
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Sending event 5/(unknown) to spy 'efi_disk add'
+Looking for osc24M-clk
+Looking for osc24M-clk
+   - result for osc24M-clk: osc24M-clk (ret=0)
+   - result for osc24M-clk: osc24M-clk (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+Looking for osc24M-clk
+Looking for osc24M-clk
+   - result for osc24M-clk: osc24M-clk (ret=0)
+   - result for osc24M-clk: osc24M-clk (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_u32_index: phy-supply: (not found)
+sun4i_usb_phy phy@4100400: External vbus detected, not enabling our own vbus
+USB EHCI 1.00
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_u32_index: companion: (not found)
+Bus usb@4101400: ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+Looking for phy@4100400
+Looking for phy@4100400
+   - result for phy@4100400: phy@4100400 (ret=0)
+   - result for phy@4100400: phy@4100400 (ret=0)
+ofnode_read_u32_index: phy-supply: (not found)
+USB OHCI 1.0
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_u32_index: companion: (not found)
+Bus usb@4200000: ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+ofnode_read_u32_index: vbus-supply: (not found)
+Looking for phy@4100400
+Looking for phy@4100400
+   - result for phy@4100400: phy@4100400 (ret=0)
+   - result for phy@4100400: phy@4100400 (ret=0)
+ofnode_read_u32_index: phy-supply: (not found)
+USB EHCI 1.00
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_u32_index: companion: (not found)
+Bus usb@4200400: ofnode_read_prop: assigned-clock-rates: <not found>
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: clock@2001000 (ret=0)
+   - result for clock@2001000: clock@2001000 (ret=0)
+Looking for clock@2001000
+Looking for clock@2001000
+   - result for clock@2001000: reset (ret=0)
+   - result for clock@2001000: reset (ret=0)
+Looking for phy@4100400
+Looking for phy@4100400
+   - result for phy@4100400: phy@4100400 (ret=0)
+   - result for phy@4100400: phy@4100400 (ret=0)
+ofnode_read_u32_index: phy-supply: (not found)
+USB OHCI 1.0
+Sending event 5/(unknown) to spy 'efi_disk add'
+ofnode_read_u32_index: companion: (not found)
+scanning bus usb@4101000 for devices... ofnode_read_u32_index: usb,device-class: (not found)
+ofnode_read_u32_index: usb,interface-class: (not found)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+1 USB Device(s) found
+scanning bus usb@4101400 for devices... ofnode_read_u32_index: usb,device-class: (not found)
+ofnode_read_u32_index: usb,interface-class: (not found)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+1 USB Device(s) found
+scanning bus usb@4200000 for devices... ofnode_read_u32_index: usb,device-class: (not found)
+ofnode_read_u32_index: usb,interface-class: (not found)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+1 USB Device(s) found
+scanning bus usb@4200400 for devices... ofnode_read_u32_index: usb,device-class: (not found)
+ofnode_read_u32_index: usb,interface-class: (not found)
+ofnode_read_prop: assigned-clock-rates: <not found>
+Sending event 5/(unknown) to spy 'efi_disk add'
+1 USB Device(s) found
+       scanning usb for storage devices... 0 Storage Device(s) found
+Hit any key to stop autoboot:  2  1  0 
+ofnode_read_u32_index: vmmc-supply: 0x5 (5)
+ofnode_read_u32_index: vqmmc-supply: 0x6 (6)
+switch to partitions #0, OK
+mmc1(part 0) is current device
+Scanning mmc 1:1...
+FAT read(sect=2080), clust_size=8, read_size=8
+FAT read(sect=2104), clust_size=8, read_size=8
+Found /extlinux/extlinux.conf
+Retrieving file: /extlinux/extlinux.conf
+FAT read(sect=2080), clust_size=8, read_size=8
+FAT read(sect=2104), clust_size=8, read_size=8
+X96Q Pro+ H728 Trixie v3
+1:	Armbian Trixie - Linux 7.2 - eMMC enabled (52 MHz SDR)
+2:	Troubleshooting - upstream DTB with eMMC disabled
+Enter choice: 1:	Armbian Trixie - Linux 7.2 - eMMC enabled (52 MHz SDR)
+Retrieving file: /Image
+FAT read(sect=2080), clust_size=8, read_size=8
