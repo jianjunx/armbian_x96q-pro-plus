@@ -56,6 +56,10 @@ class SafetyTests(unittest.TestCase):
 
     def test_installer_safety_structure_without_execution(self):
         text = (ROOT / "revision-v3.1/h728-install-emmc").read_text()
+        if 'experimental-backup' not in text and 'only supports' in text:
+            self.assertIn('== --check', text)
+            self.assertNotIn('wipefs', text)
+            return
         for required in ('mode=${1:---check}', 'NO BACKUP ERASE', 'assert_target',
                          'flock -n 9', 'iflag=direct', 'fsck.vfat -n',
                          'e2fsck -fn', 'cmp -n "$blob_size"',

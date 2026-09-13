@@ -3,7 +3,7 @@ set -euo pipefail
 src=/armbian/cache/h728-v3.1-input
 # shellcheck source=settings.sh
 source "$src/settings.sh"
-out=/armbian/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1.3_SD.img
+out=/armbian/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1.2_SD.img
 for path in "$out" "$out.sha256" "$out.verification.txt" "$out.packages.txt"; do
     test ! -e "$path" || { echo "Refusing overwrite: $path"; exit 1; }
 done

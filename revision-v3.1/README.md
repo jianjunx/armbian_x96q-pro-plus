@@ -1,5 +1,8 @@
 # v3.1 full SD image
 
+RELEASE BRANCH: v3.1.2, +h728.6, refusal-only eMMC installer. The v3.1.3
+candidate notes below refer to parallel development, not this release.
+
 ## Current candidate: v3.1.3
 
 User explicitly requested complete eMMC replacement and selected no backup.

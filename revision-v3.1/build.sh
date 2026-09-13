@@ -84,7 +84,6 @@ sed '/^report=/d; s/Armbian v3 hardware report/Armbian v3.1 hardware report/; s/
 chmod 755 "$root/usr/local/lib/h728-diagnostics-base"
 install -m0755 "$src/h728-diagnostics" "$root/usr/local/sbin/h728-diagnostics"
 install -m0755 "$src/h728-install-emmc" "$root/usr/local/sbin/h728-install-emmc"
-install -m0755 "$src/check-emmc-payload.sh" "$root/usr/local/lib/h728-check-emmc-payload"
 for file in u-boot-sunxi-with-spl-emmc.bin emmc-uboot.config emmc-uboot.dtb emmc-uboot.sha256 source.sha256 recipe.sha256 bundle.sha256; do
     install -m0644 "$emmc_payload/$file" "$root/usr/lib/h728/uboot/$file"
 done
@@ -94,10 +93,9 @@ if [[ -f $root/lib/systemd/system/exim4.service || -f $root/usr/lib/systemd/syst
     chroot "$root" systemctl mask exim4.service
 fi
 install -m0644 "$src/H728-README.txt" "$root/boot/H728-README.txt"
-install -m0644 "$src/EMMC-INSTALL.md" "$root/boot/EMMC-INSTALL.md"
-sed -i 's/v3\.1/v3.1.3/g' "$root/boot/extlinux/extlinux.conf" "$root/boot/boot.cmd"
-mkimage -A arm64 -T script -C none -n 'H728 Trixie v3.1.3 SD' -d "$root/boot/boot.cmd" "$root/boot/boot.scr"
-printf 'VERSION=v3.1.3\nMODE=standalone-sd\nEMMC_INSTALL=experimental-explicit-consent\nWIFI_SDIO_MAX_HZ=24000000\n' >"$root/etc/h728-image-release"
+sed -i 's/v3\.1/v3.1.2/g' "$root/boot/extlinux/extlinux.conf" "$root/boot/boot.cmd"
+mkimage -A arm64 -T script -C none -n 'H728 Trixie v3.1.2 SD' -d "$root/boot/boot.cmd" "$root/boot/boot.scr"
+printf 'VERSION=v3.1.2\nMODE=standalone-sd\nEMMC_INSTALL=disabled\nWIFI_SDIO_MAX_HZ=24000000\n' >"$root/etc/h728-image-release"
 chroot "$root" dpkg-query -W >"$cache/installed-packages.txt"
 chroot "$root" dpkg --audit
 # Preserve first-login provisioning and remove only identities in the new image.

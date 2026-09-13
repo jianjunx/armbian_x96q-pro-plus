@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## Release branch override
+
+This branch/tag ships v3.1.2 (+h728.6), NOT the v3.1.3 development installer.
+The installer is refusal-only; preserve this boundary. v3.1.3 statements below
+describe parallel development and do not authorize enabling writes here.
+
 ## Scope
 
 These instructions apply to the entire repository. The project builds experimental Armbian SD images for the X96Q Pro+ TV box with Allwinner H728. Read `README.md`, `MATERIALS.md`, and the README for the revision being changed before editing build logic.
