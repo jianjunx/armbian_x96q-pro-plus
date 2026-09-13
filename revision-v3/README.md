@@ -193,6 +193,9 @@ H728_DTB_ROLLBACK=1 bash /armbian/cache/h728-v3-input/verify.sh
 
 ## eMMC 独立启动失败：根因与修复（2026-09-13 串口定位）
 
+> 完整排查时间线、每层根因的代码位置、验证数据和踩过的坑见
+> [`eMMC-BOOT-POSTMORTEM.md`](eMMC-BOOT-POSTMORTEM.md)。本节是它的摘要。
+
 接上 USB-TTL 串口（COM3，115200 8N1）后，拔 SD 卡冷启动 eMMC 的完整输出只有 7 行：
 
 ```
