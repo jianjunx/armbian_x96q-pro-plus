@@ -1,4 +1,13 @@
-# GitHub Actions SD image assembly
+# GitHub Actions build pipelines
+
+Two independent workflows exist:
+
+- `image-release.yml` assembles and publishes the full SD image (described below).
+- `uboot-emmc.yml` builds only the eMMC bootloader blob (see the last section).
+
+Neither builds Linux from source.
+
+## SD image assembly
 
 The workflow builds v3.1 from six pinned, pristine offline inputs, NOT from a
 physical SD/eMMC backup. No private diagnostics or keys belong in the bundle.
@@ -50,3 +59,33 @@ The local v3.1 image hash in revision-v3.1/README.md is not a CI output hash.
 
 Changing image behavior requires a new version and output filename in the
 revision scripts, not merely rerunning a tag. Preserve v2 and previous outputs.
+
+## eMMC U-Boot blob
+
+`uboot-emmc.yml` cross-compiles `u-boot-sunxi-with-spl-emmc.bin` from the pinned
+upstream commits in `uboot-x96qproplus/PKGBUILD` (U-Boot `b99f4a9e...`, TF-A
+`b5de74a...`), applies `revision-v3/uboot-emmc.patch`, and uploads the blob, its
+SHA-256, the resulting `.config` and the source archive hashes as a workflow
+artifact. It needs no input bundle, no privileged container and no 4 GiB image,
+so it finishes in minutes instead of the SD job's ~90 minutes.
+
+It is the CI twin of `revision-v3/build-emmc-uboot.sh`, which does the same work
+inside the local `h728-image-build` container. Changing one without the other
+makes the two outputs diverge; keep the pinned commits, the patch and the
+`scripts/config` edits identical.
+
+Upstream sources are downloaded by commit SHA but are not hash-pinned unless
+`ci/uboot-emmc.sha256` exists. GitHub regenerates archive tarballs, so their
+hashes can change for reasons unrelated to the source. Copy `source.sha256` from
+a run's artifact into `ci/uboot-emmc.sha256` to pin them; the workflow then
+verifies before building and warns while the file is absent.
+
+The blob is verified, not merely produced: the compiled board DTB must carry
+`bus-width = <1>` and `max-frequency = <26000000>` on `/soc/mmc@4022000`, and
+the blob must contain `eGON.BT0` at byte offset 8192.
+
+Installing a blob is a separate manual step: copy it to the SD card's FAT
+partition, boot from SD, interrupt autoboot, and write it to the eMMC user area
+at sector 16. The eMMC partition table starts at 1 MiB, so this replaces only
+the bootloader area. The SD card keeps its own bootloader and stays bootable
+regardless of the outcome.
