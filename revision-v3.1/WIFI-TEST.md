@@ -1,5 +1,138 @@
 # v3.1 Wi-Fi bring-up, 2026-09-10
 
+## Latest evidence and next experiment (2026-09-13)
+
+40 MHz / 4-bit / 20 mA hardware test failed initialization with CMD53 RD DCE
+and no wlan0. Stop clock/drive sweeps. Binary audit now establishes that the
+reference pinctrl code lacks the upstream A523 inverted-withstand encoding
+fix. This is not yet a proven Wi-Fi root cause. Details and reproducibility
+caveats: [WIFI-KERNEL-AUDIT.md](WIFI-KERNEL-AUDIT.md).
+
+20 mA follow-up: user confirmed three cold boots at 24 MHz / 4-bit / 20 mA.
+300-second TCP tests completed: receive 23.8 Mbit/s, send 31.9 Mbit/s with 32
+TCP retransmissions. Supplied error filter was empty. Link was 5 GHz, signal
+-68 dBm, power saving off; Windows server used Ethernet. Do not attribute
+throughput change solely to drive strength or claim fleet/long-term stability.
+
+Next user-requested experiment: `h728-wifi-clock40-drive20-v1-test.sh` accepts
+only the 4898a7ab... 24 MHz / 4-bit / 20 mA DTB and changes max-frequency to
+40 MHz. Keeps drive strength, firmware, kernel, bootargs and all other nodes.
+Requires SD root/boot and wired carrier. Never use the earlier 40 mA clock40
+script for this state. arm creates FAT h728-wifi-clock40-drive20-v1-recovery;
+restore returns to 24 MHz / 4-bit / 20 mA, not 40 mA or 1-bit. Computer recovery
+copies original.dtb from that directory to dtb/allwinner/sun55i-h728-x96qpro+.dtb.
+Candidate SHA-256:
+869ac9994d209f25bc5978aea573ae95d08e546840b5c7dbe6e4572382a99094.
+ShellCheck, syntax, 40M/4-bit/20mA readback, inverse-edit byte equality and
+wrong-input/existing-output rejection passed offline. Hardware result pending;
+not incorporated into image assembly or a Release. After cold boot check actual
+clock, interface and CRC logs before throughput; compare at the same location.
+
+Targeted error capture now confirms 24 MHz requested / 22222222 Hz actual,
+4-bit, debug callsite enabled, and `smc 1 err, cmd 53, WR DCE` at fmac firmware
+upload. DCE denotes the host DATA_CRC_ERROR flag, WR the write direction.
+Upstream sunxi-mmc maps host error flags to -ETIMEDOUT, so -110 alone was not
+proof of a pure timeout. Root cause (signal integrity, timing, I/O threshold,
+controller behavior) is not established. Early CMD8/CMD55 response timeouts
+during device-type probing must not be conflated with this CMD53 failure.
+
+`h728-wifi-drive20-v1-test.sh` prepares the next single-property experiment:
+keep 24 MHz / 4-bit and change PG0-PG5 mmc1-pins drive-strength 40 -> 20 mA.
+No supply voltage, reset, kernel, firmware, bootargs or eMMC change. This tests
+drive sensitivity; 40 mA is not proven incorrect. It accepts only baseline
+5e4c838516b43e7667a583859b671cf5eb00316674eb950d0eb5bb67b2502bc7,
+requires SD root/boot and wired carrier, and backs up the DTB before arming.
+Candidate hash: 4898a7abe86e08c533ace788604a90ce58401dd2fc63ae42a31a5e8249c7e357.
+ShellCheck, syntax, readback, inverse-property byte equality and rejection of
+wrong input/existing output passed offline. No hardware success claimed.
+Run arm, cold boot, inspect PG0-PG5 pinconf, MMC1 ios and WR DCE logs first;
+do not start another throughput run unless initialization succeeds. Restore
+returns to 24 MHz / 4-bit / 40 mA (the failing diagnostic baseline), not the
+1-bit working control. Computer recovery copies original.dtb from FAT
+h728-wifi-drive20-v1-recovery to dtb/allwinner/sun55i-h728-x96qpro+.dtb.
+
+Follow-up: 12 MHz / 1-bit passed three user-reported cold boots and 300 s TCP
+each direction (9.56 Mbit/s receive, 10.6 Mbit/s send, zero send retransmits).
+The supplied post-test error filter was empty. User explicitly rejects this
+throughput as a final solution. Keep it only as a diagnostic control; do not
+ship/adopt it or continue a 1-bit speed sweep. High-throughput 4-bit operation
+is unresolved. This does not prove broken DAT1-DAT3 wiring.
+
+Read-only source/binary audit found CONFIG_MMC_SUNXI=y and
+CONFIG_DYNAMIC_DEBUG=y in the matched config, plus sunxi_mmc_dump_errinfo
+and its `smc %d err, cmd ...` format in the reference Image. The host driver
+is built in: swapping an AIC module cannot replace its timing/error handling.
+The newer warpme AIC patch still calls sdio_writesb and sdio_release_irq;
+these callsites alone do not establish a fix in that version. Generic upstream
+sunxi-mmc skips old clk_set_phase delay tables in new-timing mode, so merely
+adding old-style sample/output phase properties is not justified. Matching
+binary implementation and actual error status still need verification.
+
+`h728-wifi-host-audit.sh` reads the current dynamic-debug callsites, MMC1 ios,
+PG0-PG5 pin state, clock summary, module identities and host-error lines. It
+does not mount debugfs, enable logging, reload modules, access /dev/mem,
+change DTB or touch eMMC. Run while preserving the current control state;
+no throughput test is requested. Review diagnostics before sharing publicly.
+The next targeted failure-capture must be based on the callsites actually
+available, not a speculative register write or broad MMC IRQ logging which
+would also flood SD/eMMC I/O and alter timing.
+
+This update supersedes earlier clock-stability claims below. Fresh SD and
+standalone eMMC both failed AIC firmware upload. The user confirmed full
+power removal; these failures must not be dismissed as warm-reboot artifacts.
+12 MHz / 4-bit succeeded once on SD, then failed on a subsequent cold boot.
+The blocked worker stack is in sdio_release_irq -> mmc_wait_for_req_done during
+error cleanup, after a firmware upload data error. Fixing cleanup alone would
+not establish successful firmware transfer. Supplied firmware hashes match the
+pinned bundle; this proves integrity, not compatibility. No raw logs retained.
+
+The upstream board patch already matches our PM1 active-low reset, 200 ms
+post-power-on delay and 40 mA pin drive. Its 15 MHz cap is not proof that
+another clock sweep will fix this unit. Matching Manjaro 7.2 source retrieval
+still timed out. A523 pinctrl/clock fixes remain candidates to audit, not
+confirmed missing patches. Do not substitute an unrelated kernel module or
+modify regulator voltages/registers on that assumption.
+
+Next isolated experiment: `h728-wifi-width1-v1-test.sh` changes ONLY mmc1
+bus-width from 4 to 1, keeping 12 MHz, all supplies/reset settings and the
+matched kernel/modules/firmware. This tests sensitivity to bus width, not a
+proven electrical diagnosis or a shipping performance setting. Generic Linux
+SDIO core negotiates wide mode only when the host advertises 4-bit capability;
+verify actual width after boot because this binary/vendor driver may differ.
+
+Input SHA-256 (12 MHz / 4-bit):
+`7731eeb13cd90ba405da0b20bb89a979d6b3cf7c478de28d50524055b18b4614`.
+Candidate SHA-256 (12 MHz / 1-bit):
+`64cc67a31254e9aaa921deb0d66499e55e122043c1beb81e030ea27d08deff81`.
+ShellCheck, bash syntax, readback, byte-identical inverse patch and rejection
+of wrong input/existing output passed offline. Hardware result is pending.
+
+Copy the script to /root on the box. With root and /boot on the same SD and
+Ethernet connected, run `bash /root/h728-wifi-width1-v1-test.sh arm`.
+It refuses other DTBs and eMMC roots, backs up before replacement, and never
+reboots or reloads a driver. After WIFI_WIDTH1_ARMED, shut down cleanly,
+disconnect power for 30 seconds, then cold boot with SD and Ethernet attached.
+Collect mmc1 ios, ip -br link, D-state tasks and filtered AIC/MMC dmesg. Expected
+ios is 12000000 Hz and `bus width: 0 (1 bits)`; if still 4-bit the experiment
+has not taken effect. A wlan0 alone is not success: require scanning,
+association, repeated cold boots and transfer without errors before adoption.
+
+Rollback via wired SSH: `bash /root/h728-wifi-width1-v1-test.sh restore`, then
+cold boot. This restores the preceding 12 MHz / 4-bit diagnostic baseline,
+NOT a known-stable Wi-Fi state. Computer recovery: copy FAT
+`h728-wifi-width1-v1-recovery/original.dtb` to
+`dtb/allwinner/sun55i-h728-x96qpro+.dtb`. Keep recovery files. Do not force
+module removal or unbind the MMC host when a worker is stuck in D state.
+This experiment is not included in image assembly or a Release.
+
+Sources:
+- https://forum.manjaro.org/t/allwinner-h728-a523-a527-t527-initial-support-thread/173654
+- https://github.com/warpme/minimyth2/blob/8d68d845fb304c9296b28ab26ba5faa4e7c72a11/script/kernel/linux-7.2/files/2900-arm64-dts-allwinner-h728-x96q-pro-plus-improvements.patch
+- https://github.com/warpme/minimyth2/blob/8d68d845fb304c9296b28ab26ba5faa4e7c72a11/script/kernel/linux-7.2/files/2706-pinctrl-sunxi-A523-fix-voltage-withstand-encoding.patch
+- https://github.com/torvalds/linux/blob/master/drivers/mmc/core/sdio.c
+
+## Historical clock experiments
+
 Latest experiment: 40 MHz was actually achieved (debugfs ios), but firmware
 transfer again failed with SDIO data errors / -110 and no wlan0. The user
 requested direct 40 -> 24 MHz testing, with 20 MHz recovery if it fails.

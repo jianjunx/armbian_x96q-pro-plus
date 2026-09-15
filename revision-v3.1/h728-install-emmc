@@ -169,10 +169,14 @@ chmod 1777 "$dest/tmp"
 rsync -rt --info=progress2 --exclude=/h728-logs/ --exclude=/h728-diagnostics.txt /boot/ "$dest/boot/"
 # Verify the boot-critical payload before changing UUIDs or installing SPL.
 for tree in lib/modules usr/lib/linux-image-h728-manjaro usr/lib/h728/uboot; do
-    rsync -rcn --out-format='%n' "/$tree/" "$dest/$tree/" >"$work/compare"
-    [[ ! -s $work/compare ]] || die "Copy differs: $tree"
+    # Preserve link semantics: extramodules is a symlink, not a skipped file.
+    rsync -rlcni --out-format='%i %n%L' "/$tree/" "$dest/$tree/" >"$work/compare"
+    if [[ -s $work/compare ]]; then
+        cat "$work/compare" >&2
+        die "Copy differs: $tree"
+    fi
 done
-rsync -rcn --out-format='%n' --exclude=/h728-logs/ --exclude=/h728-diagnostics.txt /boot/ "$dest/boot/" >"$work/compare"
+rsync -rlcni --out-format='%i %n%L' --exclude=/h728-logs/ --exclude=/h728-diagnostics.txt /boot/ "$dest/boot/" >"$work/compare"
 [[ ! -s $work/compare ]] || die 'Boot copy differs'
 rootuuid=$(blkid -s UUID -o value "$rootpart")
 bootuuid=$(blkid -s UUID -o value "$boot")

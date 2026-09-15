@@ -1,4 +1,6 @@
 a542f4d31cef366261d1e16aa0cf96fe75e9da594cb4089196d832bdc8d57a55  manjaro-linux-a523.tar.gz
+f22b0c740cee79ca6bdf0b2bc5b6edf6a188b83bbf2fd35444dcc0a43c85c299  source-archives/iuncuim-linux-sunxi-014fe35ca1ecb5b2f4bd42629cb35ab407ee8bb5.tar.gz
+f9fef3d14c0df53819026f4be74459835c2a0b0dcbf5b5bbd9ea19f0829402b3  source-archives/linux-7.2.tar.xz
 5e4c838516b43e7667a583859b671cf5eb00316674eb950d0eb5bb67b2502bc7  build-artifacts/sun55i-h728-x96qproplus-wifi24-v3.1.1.dtb
 f0dcf4e28eaafc432745d934d847be4b9685a947a3fae8fba94818606dfb4e26  source-archives/arm-trusted-firmware-b5de74a685fb73b784e45bbbd18dd9a0c528d8b2.tar.gz
 0be96f8ccbfe23cbe99134a52dd3e812dcae4dacb067cf544c64211ff33b7cdc  source-archives/linux-5a8a8dbd857f8c670c15ea482095becfaf622458.tar.gz
@@ -17,3 +19,9 @@ d94be64757c9860c1d68ef88aa0acf552735b48076edb0fc12223bb76dbca629  armbian-build/
 44c5790fb6a5c266a16b367ab7a90b70e019a2c5121460a0b5139d5b3ebb8da3  armbian-build/output/debs/linux-image-h728-manjaro_7.2.0-7+h728.4_arm64.deb
 d9357a2223d29fdfa8373c9a37b35b3384e53edb14013b4b2ae9f086f776f408  armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-7_v3.1_SD.img
 0fadc7164369a215f7d20b74454906dc79dd7934065f34eb6761aefc07b97c46  armbian-build/output/ci-inputs/h728-v3-inputs.tar.xz
+a3647463bc81ee5cc56e24cd372c691c703f0346e9f24ca6af9cdb602f52461c  armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-h728-test1_v3.2.0-test1_SD.img
+2616e9f39e0abc7bdb11ad6596bef36b217b0787f6656134cb594f8637ebfb9c  armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-h728-test1_v3.2.0-test1_SD.img.xz
+d00421202f08ac67f646f4fa2ad75f55ec82f2130af127685dab115058eb9424  armbian-build/output/debs/linux-image-h728-source_7.2.0-1+h728test1_arm64.deb
+4ec26adbde23a36b4c2907033fda204dfb6f2adddf5976c34b57272780001ac7  armbian-build/output/h728-source-test1/linux-7.2-h728-test1-source.tar.xz
+5835f18a584b8a91d6c65e0ae0aaf00ef6a18c468db02190dd1b0436e8b60d09  armbian-build/output/h728-source-test1/config
+4b3d83b70760fb17da3d10e7c203e756f39dd1a830c4ea19ed141a327043bf6c  armbian-build/output/h728-source-test1/rebuild-recipe.tar.gz

@@ -1,0 +1,3 @@
+# Unified patches require a leading context space (including blank/tab lines).
+# Preserve upstream patch bytes; ordinary source files keep normal checks.
+kernel-experimental/*.patch whitespace=-blank-at-eol,-space-before-tab

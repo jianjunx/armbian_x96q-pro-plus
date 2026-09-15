@@ -1,0 +1,34 @@
+From: H728 project maintainers
+Subject: [PATCH] aic8800: adapt legacy driver to Linux 7.2 APIs
+
+Keep the firmware ABI: error is a fixed-width zero-padded field, while the
+configuration parser copies an already-delimited substring then terminates it.
+rfkill.c does not use any of_gpio API. The action union is anonymous in 7.2.
+
+--- a/drivers/net/wireless/aic8800_sdio/aic8800_btlpm/rfkill.c
++++ b/drivers/net/wireless/aic8800_sdio/aic8800_btlpm/rfkill.c
+@@ -21 +20,0 @@
+-#include <linux/of_gpio.h>
+--- a/drivers/net/wireless/aic8800_sdio/aic8800_fdrv/rwnx_tdls.c
++++ b/drivers/net/wireless/aic8800_sdio/aic8800_fdrv/rwnx_tdls.c
+@@ -118,5 +118,5 @@
+-		skb_put(skb, 1 + sizeof(mgmt->u.action.u.tdls_discover_resp));
++		skb_put(skb, 2 + sizeof(mgmt->u.action.tdls_discover_resp));
+ 		mgmt->u.action.category = WLAN_CATEGORY_PUBLIC;
+-		mgmt->u.action.u.tdls_discover_resp.action_code = WLAN_PUB_ACTION_TDLS_DISCOVER_RES;
+-		mgmt->u.action.u.tdls_discover_resp.dialog_token = dialog_token;
+-		mgmt->u.action.u.tdls_discover_resp.capability =
++		mgmt->u.action.action_code = WLAN_PUB_ACTION_TDLS_DISCOVER_RES;
++		mgmt->u.action.tdls_discover_resp.dialog_token = dialog_token;
++		mgmt->u.action.tdls_discover_resp.capability =
+--- a/drivers/net/wireless/aic8800_sdio/aic8800_fdrv/rwnx_platform.c
++++ b/drivers/net/wireless/aic8800_sdio/aic8800_fdrv/rwnx_platform.c
+@@ -730 +730 @@
+-	strncpy(val, dst, p -dst);
++	memcpy(val, dst, p - dst);
+--- a/drivers/net/wireless/aic8800_sdio/aic8800_fdrv/rwnx_msg_tx.c
++++ b/drivers/net/wireless/aic8800_sdio/aic8800_fdrv/rwnx_msg_tx.c
+@@ -3431 +3431,2 @@
+-	strncpy(req->error, msg, sizeof(req->error));
++	memset(req->error, 0, sizeof(req->error));
++	memcpy(req->error, msg, strnlen(msg, sizeof(req->error)));

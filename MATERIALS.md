@@ -1,5 +1,43 @@
 # X96Q Pro+ / Allwinner H728 Armbian materials
 
+## v3.2.0-test1 source-kernel SD image (2026-09-13)
+
+Compiled Linux `7.2.0-h728-test1` with GCC 13.3.0/binutils 2.42 in the native
+Linux container filesystem; all 3005 modules built. This is a new source port,
+not a reproduction of the Manjaro reference binary. See `kernel-experimental/`
+for the pinned driver patch selection, AIC Linux 7.2 API adaptations, A523
+pinctrl fix, rebuilt board DTS, packaging, assembly and read-only verification.
+
+Local image: `armbian-build/output/images/Armbian_X96Q-Pro-Plus_H728_Trixie_7.2.0-h728-test1_v3.2.0-test1_SD.img`.
+Raw SHA-256: `a3647463bc81ee5cc56e24cd372c691c703f0346e9f24ca6af9cdb602f52461c`.
+The adjacent `.verify.txt` records successful filesystem, bootloader, paired
+payload, initramfs, UUID, firmware, Trixie and first-login checks.
+Matching patched kernel source archive and config are in
+`armbian-build/output/h728-source-test1/`. Original images are preserved.
+
+**SD-only experimental delivery**: eMMC installer disabled; existing eMMC was
+not accessed. No physical hardware test has been performed for this kernel.
+Wi-Fi remains 24 MHz/4-bit/20 mA pending validation. Custom DE35/HDMI support
+from the reference binary is not reproduced; use Ethernet SSH/UART. Do not
+publish as a stable or feature-equivalent production image. Original kernel,
+modules and DTB remain in a boot-menu fallback. No Git push/Release this turn.
+
+## Source-kernel migration investigation (2026-09-13)
+
+New ignored inputs, hashed in SHA256SUMS:
+- Linux 7.2 tar.xz from https://mirrors.ustc.edu.cn/kernel.org/linux/kernel/v7.x/linux-7.2.tar.xz
+  SHA-256 checked against https://cdn.kernel.org/pub/linux/kernel/v7.x/sha256sums.asc
+  (HTTPS checksum comparison, not an independently verified PGP signature).
+- Author recipe snapshot from https://codeload.github.com/iuncuim/linux-sunxi/tar.gz/014fe35ca1ecb5b2f4bd42629cb35ab407ee8bb5
+  Its PKGBUILD targets 6.19-rc1, NOT our reference 7.2-7 binary. Do not claim
+  complete matching source has been recovered. This GitHub repository provides
+  previously missing later H728/AIC patch history despite inaccessible GitLab.
+
+The incomplete GitHub Linux snapshot download was stopped after the verified
+USTC archive succeeded; retained as .tar.gz.partial, not a build input.
+The subsequent source-test build is recorded above; hardware validation and
+full reference display-source recovery remain outstanding.
+
 ## v3.1.3 installation candidate (2026-09-13)
 
 User authorized fresh eMMC overwrite and explicitly chose no backup. New

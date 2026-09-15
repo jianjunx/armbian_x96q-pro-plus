@@ -1,6 +1,7 @@
 """Offline regressions; never imports pyserial or touches a device."""
 import ast
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -10,6 +11,33 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class SafetyTests(unittest.TestCase):
+    @unittest.skipUnless(os.sys.platform.startswith("linux") and shutil.which("rsync"),
+                         "Run on Linux with target rsync (macOS openrsync differs)")
+    def test_copy_verifier_checks_links_and_file_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dst = Path(tmp, "src"), Path(tmp, "dst")
+            src.mkdir()
+            dst.mkdir()
+            for directory in (src, dst):
+                (directory / "extramodules").symlink_to("../missing-extramodules")
+                (directory / "module.ko").write_bytes(b"test module")
+            def differences():
+                return subprocess.run(
+                    ["rsync", "-rlcni", "--out-format=%i %n%L", str(src)+"/", str(dst)+"/"],
+                    capture_output=True, text=True, check=True,
+                ).stdout
+            self.assertEqual(differences(), "")
+            (dst / "extramodules").unlink()
+            (dst / "extramodules").symlink_to("../wrong-target")
+            self.assertIn("extramodules", differences())
+            (dst / "extramodules").unlink()
+            (dst / "extramodules").symlink_to("../missing-extramodules")
+            (dst / "module.ko").write_bytes(b"bad! module")
+            self.assertIn("module.ko", differences())
+        script = (ROOT / "revision-v3.1/h728-install-emmc").read_text()
+        self.assertNotIn("rsync -rcn", script)
+        self.assertEqual(script.count("rsync -rlcni"), 2)
+
     def test_retired_writers_fail_before_serial_access(self):
         for name in ("h728_flash_emmc_uboot.py", "h728_emmc_one_pass.py"):
             result = subprocess.run(

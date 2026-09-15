@@ -1,0 +1,4 @@
+#!/bin/sh
+echo 'STOP: Source-kernel test image is SD-only. eMMC installation is disabled.' >&2
+echo 'Keep your existing eMMC system and recovery SD unchanged.' >&2
+exit 1

@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+if [ "$1" = configure ]; then
+    version=7.2.0-h728-test1
+    payload=/usr/lib/linux-image-h728-source
+    depmod "$version"
+    mkdir -p /boot/dtb/allwinner
+    cp "$payload/Image" "/boot/vmlinuz-$version"
+    cp "$payload/Image" /boot/Image
+    cp "$payload/config" "/boot/config-$version"
+    cp "$payload/sun55i-h728-test1.dtb" /boot/dtb/allwinner/
+    update-initramfs -c -k "$version"
+fi
